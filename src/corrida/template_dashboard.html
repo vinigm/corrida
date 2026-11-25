@@ -300,6 +300,42 @@
     color: var(--tinta);
     font-weight: 600;
   }
+  .grade-subcards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .subcard {
+    background: var(--pagina);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .subcard.largo {
+    grid-column: span 2;
+  }
+  .subcard-rotulo {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tinta-2);
+    margin: 0 0 2px;
+  }
+  .subcard-valor {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--tinta);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .subcard-nota {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--tinta-2);
+  }
 
   .pilula-variacao {
     display: inline-block;
@@ -1137,6 +1173,20 @@ function criarCardBigNumber(opcoes) {
   if (opcoes.pilulaTexto) {
     card.appendChild(criarElemento("span", "card-big-pilula " + (opcoes.pilulaClasse || "neutra"), opcoes.pilulaTexto));
   }
+  if (opcoes.subcards && opcoes.subcards.length) {
+    const gradeSub = criarElemento("div", "grade-subcards");
+    for (const sub of opcoes.subcards) {
+      const elSub = criarElemento("div", "subcard" + (sub.largo ? " largo" : ""));
+      elSub.appendChild(criarElemento("p", "subcard-rotulo", sub.rotulo));
+      const pValor = criarElemento("p", "subcard-valor", sub.valor);
+      if (sub.nota) {
+        pValor.appendChild(criarElemento("span", "subcard-nota", " " + sub.nota));
+      }
+      elSub.appendChild(pValor);
+      gradeSub.appendChild(elSub);
+    }
+    card.appendChild(gradeSub);
+  }
   for (const PartesLinha of (opcoes.linhas || [])) {
     const p = criarElemento("p", "card-big-linha");
     for (const parte of PartesLinha) {
@@ -1215,23 +1265,29 @@ function desenharCicloAtual() {
     classePilulaKmTotal = variacaoAcumuladaCiclo >= 0 ? "positiva" : "negativa";
   }
 
+  const pctCaminhandoDistancia = totalM > 0 ? (100 - pctCorrendoDistancia) : 0;
   grade.appendChild(criarCardBigNumber({
     destaque: true,
     rotulo: "KM Total",
     valor: formatarKm(totalM) + " km",
     pilulaTexto: pilulaKmTotal,
     pilulaClasse: classePilulaKmTotal,
-    linhas: [
-      [
-        { negrito: true, texto: "Correndo " + formatarKm(correndoM) + " km" },
-        { negrito: false, texto: " · " },
-        { negrito: true, texto: "caminhando " + formatarKm(caminhandoM) + " km" },
-        { negrito: false, texto: " (" + pctCorrendoDistancia + "% correndo)" },
-      ],
-      [
-        { negrito: true, texto: "Maior trecho contínuo: " + formatarKm(maiorTrechoCicloM) + " km" },
-        { negrito: false, texto: " · desde " + formatarDataIso(inicioIso) },
-      ],
+    subcards: [
+      {
+        rotulo: "Correndo",
+        valor: formatarKm(correndoM) + " km",
+        nota: "(" + pctCorrendoDistancia + "%)",
+      },
+      {
+        rotulo: "Caminhando",
+        valor: formatarKm(caminhandoM) + " km",
+        nota: "(" + pctCaminhandoDistancia + "%)",
+      },
+      {
+        rotulo: "Maior trecho contínuo",
+        valor: formatarKm(maiorTrechoCicloM) + " km",
+        largo: true,
+      },
     ],
   }));
 
@@ -1242,21 +1298,27 @@ function desenharCicloAtual() {
     valor: formatarKm(kmMedioSemanaM) + " km",
     pilulaTexto: nSemanas === 1 ? "1 semana ativa no ciclo" : nSemanas + " semanas ativas no ciclo",
     pilulaClasse: "neutra",
-    linhas: [
-      [
-        { negrito: true, texto: treinosPorSemana + " corridas/semana" },
-        { negrito: false, texto: " em média no ciclo" },
-      ],
-      [
-        { negrito: true, texto: "Correndo " + formatarKm(correndoM / nSemanas) + " km/sem" },
-        { negrito: false, texto: " · média por corrida " + formatarKm(nCorridas > 0 ? totalM / nCorridas : 0) + " km" },
-      ],
+    subcards: [
+      {
+        rotulo: "Frequência",
+        valor: treinosPorSemana,
+        nota: "corridas/sem",
+      },
+      {
+        rotulo: "Média por corrida",
+        valor: formatarKm(nCorridas > 0 ? totalM / nCorridas : 0) + " km",
+      },
+      {
+        rotulo: "Correndo por semana",
+        valor: formatarKm(correndoM / nSemanas) + " km/sem",
+        largo: true,
+      },
     ],
   }));
 
   const ultimaCorrida = nCorridas > 0 ? corridasCiclo[nCorridas - 1] : null;
   const fcUltimaTexto = (ultimaCorrida && ultimaCorrida.fc_media_bpm)
-    ? NUMERO_0.format(ultimaCorrida.fc_media_bpm) + " bpm méd (" + NUMERO_0.format(ultimaCorrida.fc_max_bpm || 0) + " máx)"
+    ? NUMERO_0.format(ultimaCorrida.fc_media_bpm) + " / " + NUMERO_0.format(ultimaCorrida.fc_max_bpm || 0) + " bpm"
     : "—";
   grade.appendChild(criarCardBigNumber({
     destaque: false,
@@ -1264,15 +1326,22 @@ function desenharCicloAtual() {
     valor: formatarKm(kmMedioMesM) + " km",
     pilulaTexto: nMeses === 1 ? "1 mês ativo (nov/2026)" : nMeses + " meses ativos no ciclo",
     pilulaClasse: "neutra",
-    linhas: [
-      [
-        { negrito: true, texto: nCorridas + (nCorridas === 1 ? " corrida" : " corridas") + "/mês" },
-        { negrito: false, texto: " · pace última " + (ultimaCorrida ? formatarPace(ultimaCorrida.pace_correndo_min_km) : "—") + "/km" },
-      ],
-      [
-        { negrito: true, texto: "FC última: " + fcUltimaTexto },
-        { negrito: false, texto: " no ciclo atual" },
-      ],
+    subcards: [
+      {
+        rotulo: "Volume no mês",
+        valor: String(nCorridas),
+        nota: nCorridas === 1 ? "corrida" : "corridas",
+      },
+      {
+        rotulo: "Pace última",
+        valor: (ultimaCorrida ? formatarPace(ultimaCorrida.pace_correndo_min_km) : "—"),
+        nota: "/km",
+      },
+      {
+        rotulo: "FC última (média / máx)",
+        valor: fcUltimaTexto,
+        largo: true,
+      },
     ],
   }));
 
