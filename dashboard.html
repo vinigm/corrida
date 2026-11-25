@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evolução na corrida</title>
+<style>
+  :root {
+    color-scheme: light;
+    --pagina: #f9f9f7;
+    --superficie: #fcfcfb;
+    --tinta: #0b0b0b;
+    --tinta-2: #52514e;
+    --tinta-muda: #898781;
+    --grade: #e1e0d9;
+    --eixo: #c3c2b7;
+    --borda: rgba(11, 11, 11, 0.10);
+    --serie-1: #2a78d6;
+    --serie-2: #eb6834;
+    --serie-3: #1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --pagina: #0d0d0d;
+      --superficie: #1a1a19;
+      --tinta: #f0efec;
+      --tinta-2: #c3c2b7;
+      --grade: #2c2c2a;
+      --eixo: #383835;
+      --borda: rgba(255, 255, 255, 0.10);
+      --serie-1: #3987e5;
+      --serie-2: #d95926;
+      --serie-3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --pagina: #0d0d0d;
+    --superficie: #1a1a19;
+    --tinta: #f0efec;
+    --tinta-2: #c3c2b7;
+    --grade: #2c2c2a;
+    --eixo: #383835;
+    --borda: rgba(255, 255, 255, 0.10);
+    --serie-1: #3987e5;
+    --serie-2: #d95926;
+    --serie-3: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--pagina);
+    color: var(--tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.4;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1rem; margin: 0 0 2px; }
+  .sub { color: var(--tinta-2); font-size: 0.875rem; margin: 0 0 12px; }
+
+  .cartao {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    margin: 16px 0 12px;
+  }
+  .kpi-grande { grid-column: span 2; }
+  .kpi-rotulo { color: var(--tinta-2); font-size: 0.8125rem; margin: 0 0 4px; }
+  .kpi-valor { font-size: 2rem; font-weight: 600; margin: 0; }
+  .kpi-nota { color: var(--tinta-2); font-size: 0.8125rem; margin: 2px 0 0; }
+
+  .meta { margin-top: 12px; }
+  .meta-topo {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: var(--tinta-2);
+    margin-bottom: 4px;
+  }
+  .meta-topo strong { color: var(--tinta); font-weight: 600; }
+  .trilho { height: 8px; border-radius: 4px; background: var(--grade); overflow: hidden; }
+  .preenchimento { height: 100%; border-radius: 4px; background: var(--serie-1); }
+
+  .grade-graficos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .cartao { min-width: 0; }
+  .cartao-grafico { padding: 16px 16px 12px; }
+  .area-grafico { position: relative; height: 280px; }
+  .area-grafico.baixa { height: 170px; margin-top: 8px; }
+  .legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 0.8125rem;
+    color: var(--tinta-2);
+    margin: 0 0 8px;
+  }
+  .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .chave { width: 10px; height: 10px; display: inline-block; }
+  .chave.quadrado { border-radius: 2px; }
+  .chave.circulo { border-radius: 50%; }
+  .chave.losango { transform: rotate(45deg) scale(0.85); border-radius: 1px; }
+  .chave.tracejado {
+    width: 16px; height: 0; border-top: 2px dashed var(--tinta-2);
+  }
+
+  .rolavel { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.8125rem; }
+  th, td { padding: 8px 10px; text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  thead th {
+    color: var(--tinta-2);
+    font-weight: 600;
+    border-bottom: 1px solid var(--eixo);
+  }
+  tbody td { border-bottom: 1px solid var(--grade); font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .filtro-ano { margin: 12px 0 8px; }
+  .segmentado {
+    display: inline-flex;
+    border: 1px solid var(--eixo);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--superficie);
+  }
+  .segmentado button {
+    font: inherit;
+    font-size: 0.875rem;
+    min-height: 40px;
+    min-width: 64px;
+    padding: 6px 16px;
+    border: 0;
+    border-left: 1px solid var(--eixo);
+    background: transparent;
+    color: var(--tinta-2);
+    cursor: pointer;
+  }
+  .segmentado button:first-child { border-left: 0; }
+  .segmentado button:hover { background: var(--grade); }
+  .segmentado button[aria-pressed="true"] {
+    background: var(--tinta);
+    color: var(--superficie);
+    font-weight: 600;
+  }
+  .segmentado button:focus-visible { outline: 2px solid var(--serie-1); outline-offset: -2px; }
+  .resumo-recorte { color: var(--tinta-2); font-size: 0.875rem; margin: 0 0 4px; }
+  .resumo-recorte strong { color: var(--tinta); font-weight: 600; }
+
+  footer { color: var(--tinta-2); font-size: 0.8125rem; margin-top: 16px; }
+
+  @media (max-width: 800px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kpi-grande { grid-column: span 2; }
+    .kpi-valor { font-size: 1.625rem; }
+    .area-grafico { height: 240px; }
+  }
+
+  /* Celular estreito: cartões de KPI em meia largura ficam com ~100 px e a
+     data "19/09/2026" estourava. Uma coluna resolve sem quebrar o número. */
+  @media (max-width: 480px) {
+    .kpis { grid-template-columns: minmax(0, 1fr); }
+    .kpi-grande { grid-column: span 1; }
+    .kpi-valor { white-space: nowrap; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Evolução na corrida</h1>
+  <p class="sub">Meta 1: correr 5 km sem parar. Meta final: 10 km. O trecho contínuo vem da detecção automática de corrida/caminhada da Garmin.</p>
+
+  <div class="filtro-ano">
+    <div class="segmentado" id="filtro-ano" role="group" aria-label="Filtrar por ano"></div>
+  </div>
+  <p class="resumo-recorte" id="resumo-recorte" aria-live="polite"></p>
+
+  <section class="kpis" id="kpis" aria-label="Indicadores principais"></section>
+
+  <section class="grade-graficos">
+    <article class="cartao cartao-grafico">
+      <h2>Maior trecho contínuo correndo, por corrida</h2>
+      <p class="sub">Métrica-mãe da meta: o maior segmento corrido sem caminhar nem parar. As linhas tracejadas são as metas.</p>
+      <div class="legenda" id="legenda-trecho"></div>
+      <div class="area-grafico"><canvas id="grafico-trecho" role="img" aria-label="Maior trecho contínuo correndo por corrida, em km, com linhas de meta em 5 e 10 km. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Distância por corrida: correndo, caminhando e parado</h2>
+      <p class="sub">Soma dos segmentos detectados pela Garmin em cada corrida.</p>
+      <div class="legenda" id="legenda-empilhado"></div>
+      <div class="area-grafico"><canvas id="grafico-empilhado" role="img" aria-label="Distância por corrida empilhada em correndo, caminhando e parado, em km. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Pace correndo</h2>
+      <p class="sub">Só o tempo e a distância dos trechos corridos. Menor é mais rápido (eixo invertido).</p>
+      <div class="legenda" id="legenda-pace"></div>
+      <div class="area-grafico"><canvas id="grafico-pace" role="img" aria-label="Pace correndo por corrida, em minutos por km. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Eficiência aeróbica</h2>
+      <p class="sub">Velocidade média nos trechos corridos dividida pela FC média (m/min por bpm). Maior é melhor condicionamento.</p>
+      <div class="legenda" id="legenda-eficiencia"></div>
+      <div class="area-grafico"><canvas id="grafico-eficiencia" role="img" aria-label="Eficiência aeróbica por corrida, em metros por minuto por batimento. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Volume semanal</h2>
+      <p class="sub">Semanas ISO (segunda a domingo), incluindo semanas sem corrida.</p>
+      <div class="area-grafico"><canvas id="grafico-volume-km" role="img" aria-label="Quilômetros corridos por semana. Dados na tabela abaixo."></canvas></div>
+      <div class="area-grafico baixa"><canvas id="grafico-volume-n" role="img" aria-label="Número de corridas por semana. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao">
+      <h2>Todas as corridas</h2>
+      <p class="sub">Mais recente no topo.</p>
+      <div class="rolavel"><table id="tabela">
+        <thead><tr>
+          <th>Data</th><th>Local</th><th>Total (km)</th><th>Correndo (km)</th>
+          <th>Caminhando (km)</th><th>% tempo correndo</th><th>Maior trecho (m)</th>
+          <th>Pace correndo</th><th>FC média</th><th>Eficiência</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </article>
+  </section>
+
+  <footer id="rodape"></footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const DADOS = {"corridas": [{"id_atividade": 19096108714, "data_hora_local": "2025-05-11 18:14:42", "data_local": "2025-05-11", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 5039.14013671875, "duracao_total_s": 1889.1070556640625, "fc_media_bpm": 118.0, "fc_max_bpm": 131.0, "distancia_correndo_m": 5020.53, "tempo_correndo_s": 1879.094, "distancia_caminhando_m": 18.62, "tempo_caminhando_s": 10.0, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.9947064571694156, "maior_trecho_continuo_m": 5020.53, "n_segmentos_correndo": 1, "pace_correndo_min_km": 6.238033301928947, "eficiencia_m_min_por_bpm": 1.3561261821129422}, {"id_atividade": 19111960803, "data_hora_local": "2025-05-13 11:05:20", "data_local": "2025-05-13", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3070.590087890625, "duracao_total_s": 1077.864013671875, "fc_media_bpm": 125.0, "fc_max_bpm": 136.0, "distancia_correndo_m": 3070.59, "tempo_correndo_s": 1077.851, "distancia_caminhando_m": 0.0, "tempo_caminhando_s": 0.0, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 1.0, "maior_trecho_continuo_m": 3070.59, "n_segmentos_correndo": 1, "pace_correndo_min_km": 5.850401171544665, "eficiencia_m_min_por_bpm": 1.3718471914786148}, {"id_atividade": 19143323823, "data_hora_local": "2025-05-16 11:59:23", "data_local": "2025-05-16", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2106.800048828125, "duracao_total_s": 802.2509765625, "fc_media_bpm": 129.0, "fc_max_bpm": 154.0, "distancia_correndo_m": 1603.1599999999999, "tempo_correndo_s": 489.24, "distancia_caminhando_m": 503.64, "tempo_caminhando_s": 312.998, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.6098439615176543, "maior_trecho_continuo_m": 335.1, "n_segmentos_correndo": 6, "pace_correndo_min_km": 5.086204745627386, "eficiencia_m_min_por_bpm": 1.5688499576151458}, {"id_atividade": 19165522809, "data_hora_local": "2025-05-18 15:07:26", "data_local": "2025-05-18", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 5540.22998046875, "duracao_total_s": 2044.2060546875, "fc_media_bpm": 126.0, "fc_max_bpm": 135.0, "distancia_correndo_m": 5521.38, "tempo_correndo_s": 2034.192, "distancia_caminhando_m": 18.85, "tempo_caminhando_s": 10.0, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.9951080916078333, "maior_trecho_continuo_m": 5521.38, "n_segmentos_correndo": 1, "pace_correndo_min_km": 6.140348970728333, "eficiencia_m_min_por_bpm": 1.2955098880385434}, {"id_atividade": 19723902419, "data_hora_local": "2025-07-13 15:46:03", "data_local": "2025-07-13", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3195.3701171875, "duracao_total_s": 1699.0350341796875, "fc_media_bpm": 107.0, "fc_max_bpm": 137.0, "distancia_correndo_m": 2184.08, "tempo_correndo_s": 939.0, "distancia_caminhando_m": 995.4599999999999, "tempo_caminhando_s": 715.021, "distancia_parado_m": 15.829999999999998, "tempo_parado_s": 45.001, "pct_tempo_correndo": 0.5526708894881879, "maior_trecho_continuo_m": 502.03, "n_segmentos_correndo": 9, "pace_correndo_min_km": 7.165488443646754, "eficiencia_m_min_por_bpm": 1.3175577564171095}, {"id_atividade": 19745068473, "data_hora_local": "2025-07-15 17:21:48", "data_local": "2025-07-15", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2398.449951171875, "duracao_total_s": 1222.968017578125, "fc_media_bpm": 110.0, "fc_max_bpm": 126.0, "distancia_correndo_m": 1726.6299999999999, "tempo_correndo_s": 732.953, "distancia_caminhando_m": 670.05, "tempo_caminhando_s": 479.001, "distancia_parado_m": 1.77, "tempo_parado_s": 11.0, "pct_tempo_correndo": 0.5993299829756475, "maior_trecho_continuo_m": 191.67, "n_segmentos_correndo": 10, "pace_correndo_min_km": 7.074986148354502, "eficiencia_m_min_por_bpm": 1.2989638297089454}, {"id_atividade": 20167150752, "data_hora_local": "2025-08-24 18:35:49", "data_local": "2025-08-24", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3820.2900390625, "duracao_total_s": 1492.863037109375, "fc_media_bpm": 126.0, "fc_max_bpm": 140.0, "distancia_correndo_m": 3556.5400000000004, "tempo_correndo_s": 1317.001, "distancia_caminhando_m": 263.75, "tempo_caminhando_s": 175.85, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8822052569211529, "maior_trecho_continuo_m": 2493.13, "n_segmentos_correndo": 3, "pace_correndo_min_km": 6.17173338881797, "eficiencia_m_min_por_bpm": 1.284017835738601}, {"id_atividade": 20650233244, "data_hora_local": "2025-10-10 18:14:13", "data_local": "2025-10-10", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2574.7900390625, "duracao_total_s": 1030.4649658203125, "fc_media_bpm": 137.0, "fc_max_bpm": 158.0, "distancia_correndo_m": 2337.09, "tempo_correndo_s": 898.454, "distancia_caminhando_m": 237.7, "tempo_caminhando_s": 131.999, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8719019693280528, "maior_trecho_continuo_m": 1333.48, "n_segmentos_correndo": 3, "pace_correndo_min_km": 6.40721295856528, "eficiencia_m_min_por_bpm": 1.1691423562070813}, {"id_atividade": 20671600136, "data_hora_local": "2025-10-12 20:56:06", "data_local": "2025-10-12", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2559.300048828125, "duracao_total_s": 980.0460205078125, "fc_media_bpm": 130.0, "fc_max_bpm": 139.0, "distancia_correndo_m": 2519.81, "tempo_correndo_s": 971.025, "distancia_caminhando_m": 39.49, "tempo_caminhando_s": 9.001, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.9908155497915362, "maior_trecho_continuo_m": 2519.81, "n_segmentos_correndo": 1, "pace_correndo_min_km": 6.422607260071196, "eficiencia_m_min_por_bpm": 1.1931882135581977}, {"id_atividade": 20701026041, "data_hora_local": "2025-10-15 17:39:33", "data_local": "2025-10-15", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 1157.31005859375, "duracao_total_s": 536.166015625, "fc_media_bpm": 128.0, "fc_max_bpm": 156.0, "distancia_correndo_m": 828.03, "tempo_correndo_s": 234.151, "distancia_caminhando_m": 290.14000000000004, "tempo_caminhando_s": 184.001, "distancia_parado_m": 39.14, "tempo_parado_s": 118.001, "pct_tempo_correndo": 0.43672421864654304, "maior_trecho_continuo_m": 197.28, "n_segmentos_correndo": 5, "pace_correndo_min_km": 4.713013618669211, "eficiencia_m_min_por_bpm": 1.7939090464547676}, {"id_atividade": 21162181839, "data_hora_local": "2025-12-03 17:28:59", "data_local": "2025-12-03", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3237.889892578125, "duracao_total_s": 1283.72705078125, "fc_media_bpm": 143.0, "fc_max_bpm": 156.0, "distancia_correndo_m": 3108.3599999999997, "tempo_correndo_s": 1194.712, "distancia_caminhando_m": 124.66, "tempo_caminhando_s": 82.0, "distancia_parado_m": 4.87, "tempo_parado_s": 7.0, "pct_tempo_correndo": 0.9306698075580816, "maior_trecho_continuo_m": 2448.22, "n_segmentos_correndo": 2, "pace_correndo_min_km": 6.4059075096406675, "eficiencia_m_min_por_bpm": 1.0907243929424097}, {"id_atividade": 21188327685, "data_hora_local": "2025-12-06 19:37:16", "data_local": "2025-12-06", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 4059.18994140625, "duracao_total_s": 1635.199951171875, "fc_media_bpm": 131.0, "fc_max_bpm": 166.0, "distancia_correndo_m": 3823.8900000000003, "tempo_correndo_s": 1455.178, "distancia_caminhando_m": 235.3, "tempo_caminhando_s": 180.002, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8899191526315146, "maior_trecho_continuo_m": 2551.57, "n_segmentos_correndo": 4, "pace_correndo_min_km": 6.342485444577816, "eficiencia_m_min_por_bpm": 1.2100284584980239}, {"id_atividade": 22126663832, "data_hora_local": "2026-03-10 11:07:30", "data_local": "2026-03-10", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2035.43994140625, "duracao_total_s": 794.2069702148438, "fc_media_bpm": 141.0, "fc_max_bpm": 149.0, "distancia_correndo_m": 1880.26, "tempo_correndo_s": 696.0, "distancia_caminhando_m": 155.18, "tempo_caminhando_s": 98.195, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8763590805784475, "maior_trecho_continuo_m": 1010.28, "n_segmentos_correndo": 2, "pace_correndo_min_km": 6.169359556657057, "eficiencia_m_min_por_bpm": 1.1521960369081834}, {"id_atividade": 22268939126, "data_hora_local": "2026-03-22 17:25:21", "data_local": "2026-03-22", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2561.97998046875, "duracao_total_s": 1056.52294921875, "fc_media_bpm": 147.0, "fc_max_bpm": 167.0, "distancia_correndo_m": 2377.02, "tempo_correndo_s": 873.504, "distancia_caminhando_m": 156.09, "tempo_caminhando_s": 131.001, "distancia_parado_m": 28.86, "tempo_parado_s": 52.0, "pct_tempo_correndo": 0.8267864326245498, "maior_trecho_continuo_m": 1026.15, "n_segmentos_correndo": 3, "pace_correndo_min_km": 6.12464346114042, "eficiencia_m_min_por_bpm": 1.1073769590960105}, {"id_atividade": 22570489951, "data_hora_local": "2026-04-18 09:41:43", "data_local": "2026-04-18", "tipo_atividade": "treadmill_running", "esteira": true, "distancia_total_m": 1242.6199951171875, "duracao_total_s": 915.9429931640625, "fc_media_bpm": 125.0, "fc_max_bpm": 144.0, "distancia_correndo_m": 1180.13, "tempo_correndo_s": 529.999, "distancia_caminhando_m": 62.49, "tempo_caminhando_s": 167.931, "distancia_parado_m": 0.0, "tempo_parado_s": 218.0, "pct_tempo_correndo": 0.5786457480375138, "maior_trecho_continuo_m": 1180.13, "n_segmentos_correndo": 4, "pace_correndo_min_km": 7.4850369592050585, "eficiencia_m_min_por_bpm": 1.1139096372274484}, {"id_atividade": 22672362984, "data_hora_local": "2026-04-22 18:15:22", "data_local": "2026-04-22", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2816.590087890625, "duracao_total_s": 1155.968017578125, "fc_media_bpm": 136.0, "fc_max_bpm": 165.0, "distancia_correndo_m": 2628.65, "tempo_correndo_s": 1025.954, "distancia_caminhando_m": 187.94, "tempo_caminhando_s": 130.001, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8875380096976093, "maior_trecho_continuo_m": 1377.24, "n_segmentos_correndo": 3, "pace_correndo_min_km": 6.504948674541431, "eficiencia_m_min_por_bpm": 1.1424445246516999}, {"id_atividade": 23608187351, "data_hora_local": "2026-07-15 11:51:06", "data_local": "2026-07-15", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2456.2900390625, "duracao_total_s": 997.8280029296875, "fc_media_bpm": 127.0, "fc_max_bpm": 139.0, "distancia_correndo_m": 2253.94, "tempo_correndo_s": 854.815, "distancia_caminhando_m": 202.35000000000002, "tempo_caminhando_s": 135.0, "distancia_parado_m": 0.0, "tempo_parado_s": 8.001, "pct_tempo_correndo": 0.8566860022288679, "maior_trecho_continuo_m": 1033.49, "n_segmentos_correndo": 3, "pace_correndo_min_km": 6.3208943745914565, "eficiencia_m_min_por_bpm": 1.2447040787287365}, {"id_atividade": 23768740492, "data_hora_local": "2026-07-28 17:43:49", "data_local": "2026-07-28", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3014.89990234375, "duracao_total_s": 1215.72802734375, "fc_media_bpm": 135.0, "fc_max_bpm": 155.0, "distancia_correndo_m": 2807.74, "tempo_correndo_s": 1087.713, "distancia_caminhando_m": 207.16, "tempo_caminhando_s": 128.002, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8947105201465805, "maior_trecho_continuo_m": 1000.23, "n_segmentos_correndo": 4, "pace_correndo_min_km": 6.45663416128274, "eficiencia_m_min_por_bpm": 1.149186939516976}, {"id_atividade": 23781123758, "data_hora_local": "2026-07-29 16:57:21", "data_local": "2026-07-29", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3560.159912109375, "duracao_total_s": 1439.010009765625, "fc_media_bpm": 126.0, "fc_max_bpm": 145.0, "distancia_correndo_m": 3350.5899999999997, "tempo_correndo_s": 1291.989, "distancia_caminhando_m": 209.57, "tempo_caminhando_s": 147.001, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8978443213642903, "maior_trecho_continuo_m": 1591.56, "n_segmentos_correndo": 3, "pace_correndo_min_km": 6.426674108142149, "eficiencia_m_min_por_bpm": 1.228345090527324}, {"id_atividade": 23817051885, "data_hora_local": "2026-08-01 17:29:15", "data_local": "2026-08-01", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3673.330078125, "duracao_total_s": 1496.0830078125, "fc_media_bpm": 142.0, "fc_max_bpm": 171.0, "distancia_correndo_m": 3405.7, "tempo_correndo_s": 1277.067, "distancia_caminhando_m": 265.65, "tempo_caminhando_s": 216.999, "distancia_parado_m": 1.98, "tempo_parado_s": 2.0, "pct_tempo_correndo": 0.8536167522021088, "maior_trecho_continuo_m": 2008.46, "n_segmentos_correndo": 4, "pace_correndo_min_km": 6.249654990163549, "eficiencia_m_min_por_bpm": 1.136941156942485}, {"id_atividade": 23829540580, "data_hora_local": "2026-08-02 17:43:55", "data_local": "2026-08-02", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3518.72998046875, "duracao_total_s": 1477.68798828125, "fc_media_bpm": 135.0, "fc_max_bpm": 158.0, "distancia_correndo_m": 3146.1400000000003, "tempo_correndo_s": 1204.669, "distancia_caminhando_m": 372.59000000000003, "tempo_caminhando_s": 273.0, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8152495585953282, "maior_trecho_continuo_m": 1014.07, "n_segmentos_correndo": 4, "pace_correndo_min_km": 6.381730204843607, "eficiencia_m_min_por_bpm": 1.1692117926876486}, {"id_atividade": 24389369613, "data_hora_local": "2026-09-16 18:34:30", "data_local": "2026-09-16", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 4739.97998046875, "duracao_total_s": 1995.052978515625, "fc_media_bpm": 137.0, "fc_max_bpm": 153.0, "distancia_correndo_m": 3889.8100000000004, "tempo_correndo_s": 1452.039, "distancia_caminhando_m": 850.16, "tempo_caminhando_s": 543.001, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.7278245047718341, "maior_trecho_continuo_m": 553.4, "n_segmentos_correndo": 9, "pace_correndo_min_km": 6.221550666999159, "eficiencia_m_min_por_bpm": 1.1656390147900766}, {"id_atividade": 24423742916, "data_hora_local": "2026-09-19 15:05:07", "data_local": "2026-09-19", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2918.5, "duracao_total_s": 1223.2760009765625, "fc_media_bpm": 139.0, "fc_max_bpm": 159.0, "distancia_correndo_m": 2498.99, "tempo_correndo_s": 940.001, "distancia_caminhando_m": 419.51, "tempo_caminhando_s": 283.261, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.7684379961120349, "maior_trecho_continuo_m": 513.83, "n_segmentos_correndo": 5, "pace_correndo_min_km": 6.269206092594742, "eficiencia_m_min_por_bpm": 1.1427665115290295}, {"id_atividade": 25197485104, "data_hora_local": "2026-11-21 18:24:12", "data_local": "2026-11-21", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 2684.449951171875, "duracao_total_s": 1057.1419677734375, "fc_media_bpm": 132.0, "fc_max_bpm": 160.0, "distancia_correndo_m": 2550.44, "tempo_correndo_s": 948.1279999999999, "distancia_caminhando_m": 134.01, "tempo_caminhando_s": 98.001, "distancia_parado_m": 0.0, "tempo_parado_s": 11.0, "pct_tempo_correndo": 0.8968895943636018, "maior_trecho_continuo_m": 2031.31, "n_segmentos_correndo": 2, "pace_correndo_min_km": 6.1958459455361945, "eficiencia_m_min_por_bpm": 1.2414588917059037}, {"id_atividade": 25197485888, "data_hora_local": "2026-11-23 17:55:08", "data_local": "2026-11-23", "tipo_atividade": "running", "esteira": false, "distancia_total_m": 3019.669921875, "duracao_total_s": 1268.511962890625, "fc_media_bpm": 138.0, "fc_max_bpm": 165.0, "distancia_correndo_m": 2682.63, "tempo_correndo_s": 1038.498, "distancia_caminhando_m": 337.03999999999996, "tempo_caminhando_s": 230.002, "distancia_parado_m": 0.0, "tempo_parado_s": 0.0, "pct_tempo_correndo": 0.8186819077650769, "maior_trecho_continuo_m": 1012.02, "n_segmentos_correndo": 5, "pace_correndo_min_km": 6.451989279177523, "eficiencia_m_min_por_bpm": 1.1267570704718748}], "volume_semanal": [{"semana_inicio": "2025-05-05", "km_total": 5.03914013671875, "n_corridas": 1}, {"semana_inicio": "2025-05-12", "km_total": 10.7176201171875, "n_corridas": 3}, {"semana_inicio": "2025-05-19", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-05-26", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-06-02", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-06-09", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-06-16", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-06-23", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-06-30", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-07-07", "km_total": 3.1953701171875, "n_corridas": 1}, {"semana_inicio": "2025-07-14", "km_total": 2.398449951171875, "n_corridas": 1}, {"semana_inicio": "2025-07-21", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-07-28", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-08-04", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-08-11", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-08-18", "km_total": 3.8202900390625, "n_corridas": 1}, {"semana_inicio": "2025-08-25", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-09-01", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-09-08", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-09-15", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-09-22", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-09-29", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-10-06", "km_total": 5.134090087890625, "n_corridas": 2}, {"semana_inicio": "2025-10-13", "km_total": 1.15731005859375, "n_corridas": 1}, {"semana_inicio": "2025-10-20", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-10-27", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-11-03", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-11-10", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-11-17", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-11-24", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-12-01", "km_total": 7.297079833984375, "n_corridas": 2}, {"semana_inicio": "2025-12-08", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-12-15", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-12-22", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2025-12-29", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-01-05", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-01-12", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-01-19", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-01-26", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-02-02", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-02-09", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-02-16", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-02-23", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-03-02", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-03-09", "km_total": 2.03543994140625, "n_corridas": 1}, {"semana_inicio": "2026-03-16", "km_total": 2.56197998046875, "n_corridas": 1}, {"semana_inicio": "2026-03-23", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-03-30", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-04-06", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-04-13", "km_total": 1.2426199951171875, "n_corridas": 1}, {"semana_inicio": "2026-04-20", "km_total": 2.816590087890625, "n_corridas": 1}, {"semana_inicio": "2026-04-27", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-05-04", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-05-11", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-05-18", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-05-25", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-06-01", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-06-08", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-06-15", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-06-22", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-06-29", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-07-06", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-07-13", "km_total": 2.4562900390625, "n_corridas": 1}, {"semana_inicio": "2026-07-20", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-07-27", "km_total": 13.767119873046875, "n_corridas": 4}, {"semana_inicio": "2026-08-03", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-08-10", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-08-17", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-08-24", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-08-31", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-09-07", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-09-14", "km_total": 7.65847998046875, "n_corridas": 2}, {"semana_inicio": "2026-09-21", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-09-28", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-10-05", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-10-12", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-10-19", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-10-26", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-11-02", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-11-09", "km_total": 0.0, "n_corridas": 0}, {"semana_inicio": "2026-11-16", "km_total": 2.684449951171875, "n_corridas": 1}, {"semana_inicio": "2026-11-23", "km_total": 3.019669921875, "n_corridas": 1}], "indicadores": {"maior_trecho_forma_atual_m": 2031.31, "maior_trecho_continuo_m": 5521.38, "data_recorde_trecho": "2025-05-18", "dias_janela_forma_atual": 90, "progresso_meta_5_km": 0.406262, "progresso_meta_10_km": 0.203131, "maior_distancia_total_m": 5540.22998046875, "data_ultima_corrida": "2026-11-23", "dias_desde_ultima_corrida": 2, "corridas_ultimos_30_dias": 2}, "metas_m": {"meta_5_km": 5000.0, "meta_10_km": 10000.0}, "gerado_em": "2026-11-25T14:46:36", "dados_atualizados_em": "2026-11-25T14:46:35"};
+
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const FORMATO_2 = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+const NUMERO_2 = new Intl.NumberFormat("pt-BR", FORMATO_2);
+const NUMERO_0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+const NUMERO_3 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+/* ---------- formatadores ---------- */
+function formatarKm(metros) {
+  if (metros === null || metros === undefined) return "—";
+  return NUMERO_2.format(metros / 1000);
+}
+function formatarPace(minutosPorKm) {
+  if (minutosPorKm === null || minutosPorKm === undefined) return "—";
+  let minutos = Math.floor(minutosPorKm);
+  let segundos = Math.round((minutosPorKm - minutos) * 60);
+  if (segundos === 60) { minutos += 1; segundos = 0; }
+  return minutos + ":" + String(segundos).padStart(2, "0");
+}
+function formatarDataIso(textoIso) {
+  const partes = textoIso.slice(0, 10).split("-");
+  return partes[2] + "/" + partes[1] + "/" + partes[0];
+}
+function formatarDataHora(textoIso) {
+  if (!textoIso) return "—";
+  return formatarDataIso(textoIso) + " " + textoIso.slice(11, 16);
+}
+function formatarRotuloMes(timestamp) {
+  const data = new Date(timestamp);
+  return MESES[data.getMonth()] + "/" + String(data.getFullYear()).slice(2);
+}
+function formatarSemana(textoIso) {
+  const partes = textoIso.split("-");
+  return partes[2] + "/" + partes[1];
+}
+function converterParaTimestamp(textoDataHora) {
+  return new Date(textoDataHora.replace(" ", "T")).getTime();
+}
+function cor(nome) {
+  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+}
+
+/* ---------- filtro por ano ---------- */
+let anoSelecionado = null; // null = Todos
+
+function anoDaCorrida(corrida) {
+  return Number(corrida.data_local.slice(0, 4));
+}
+
+function anosDisponiveis() {
+  const anos = [];
+  for (const corrida of DADOS.corridas) {
+    const ano = anoDaCorrida(corrida);
+    if (!anos.includes(ano)) anos.push(ano);
+  }
+  return anos.sort((a, b) => a - b);
+}
+
+function corridasFiltradas() {
+  if (anoSelecionado === null) return DADOS.corridas;
+  return DADOS.corridas.filter((corrida) => anoDaCorrida(corrida) === anoSelecionado);
+}
+
+function anoIsoDaSemana(semanaInicioIso) {
+  // Ano ISO = ano da quinta-feira da semana (segunda + 3 dias).
+  const quinta = new Date(semanaInicioIso + "T12:00:00");
+  quinta.setDate(quinta.getDate() + 3);
+  return quinta.getFullYear();
+}
+
+function semanasFiltradas() {
+  if (anoSelecionado === null) return DADOS.volume_semanal;
+  return DADOS.volume_semanal.filter((semana) => anoIsoDaSemana(semana.semana_inicio) === anoSelecionado);
+}
+
+function lerAnoDoHash() {
+  const resultado = /^#ano=(\d{4})$/.exec(window.location.hash);
+  if (resultado === null) return null;
+  const ano = Number(resultado[1]);
+  return anosDisponiveis().includes(ano) ? ano : null;
+}
+
+function gravarAnoNoHash() {
+  const base = window.location.pathname + window.location.search;
+  const destino = anoSelecionado === null ? base : base + "#ano=" + anoSelecionado;
+  // Em URL data: ou visualizador isolado, replaceState lança SecurityError.
+  // Lembrar o ano é conveniência: o filtro tem de funcionar mesmo sem isso.
+  try {
+    window.history.replaceState(null, "", destino);
+  } catch (erro) {
+    console.info("Não foi possível gravar o ano na URL:", erro.name);
+  }
+}
+
+function selecionarAno(ano) {
+  anoSelecionado = ano;
+  desenharTudo();
+  gravarAnoNoHash();
+}
+
+function desenharControleAno() {
+  const grupo = document.getElementById("filtro-ano");
+  grupo.textContent = "";
+  const opcoes = [{ ano: null, texto: "Todos" }].concat(
+    anosDisponiveis().map((ano) => ({ ano: ano, texto: String(ano) })),
+  );
+  for (const opcao of opcoes) {
+    const botao = criarElemento("button", "", opcao.texto);
+    botao.type = "button";
+    botao.setAttribute("aria-pressed", String(opcao.ano === anoSelecionado));
+    botao.addEventListener("click", () => selecionarAno(opcao.ano));
+    grupo.appendChild(botao);
+  }
+}
+
+function desenharResumoRecorte() {
+  const corridas = corridasFiltradas();
+  let totalM = 0;
+  let correndoM = 0;
+  for (const corrida of corridas) {
+    totalM += corrida.distancia_total_m || 0;
+    correndoM += corrida.distancia_correndo_m || 0;
+  }
+  const elemento = document.getElementById("resumo-recorte");
+  elemento.textContent = "";
+  const rotuloCorridas = corridas.length === 1 ? " corrida" : " corridas";
+  const partes = [
+    String(corridas.length) + rotuloCorridas,
+    formatarKm(totalM) + " km no total",
+    formatarKm(correndoM) + " km correndo",
+  ];
+  elemento.appendChild(criarElemento("strong", "", partes[0]));
+  elemento.appendChild(document.createTextNode(" · " + partes[1] + " · " + partes[2]));
+}
+
+/* ---------- KPIs ---------- */
+function criarElemento(tag, classe, texto) {
+  const elemento = document.createElement(tag);
+  if (classe) elemento.className = classe;
+  if (texto !== undefined) elemento.textContent = texto;
+  return elemento;
+}
+
+function criarBarraMeta(rotulo, metaM, progresso, formaAtualM) {
+  const bloco = criarElemento("div", "meta");
+  const topo = criarElemento("div", "meta-topo");
+  topo.appendChild(criarElemento("span", "", rotulo));
+  const percentual = Math.round(progresso * 100);
+  const dias = DADOS.indicadores.dias_janela_forma_atual;
+  let situacao = "sem corridas nos últimos " + dias + " dias";
+  if (formaAtualM !== null) {
+    situacao = percentual + "% · faltam " + formatarKm(Math.max(metaM - formaAtualM, 0)) + " km";
+  }
+  topo.appendChild(criarElemento("strong", "", situacao));
+  const trilho = criarElemento("div", "trilho");
+  trilho.setAttribute("role", "progressbar");
+  trilho.setAttribute("aria-label", rotulo);
+  trilho.setAttribute("aria-valuemin", "0");
+  trilho.setAttribute("aria-valuemax", "100");
+  trilho.setAttribute("aria-valuenow", String(percentual));
+  const preenchimento = criarElemento("div", "preenchimento");
+  preenchimento.style.width = (progresso * 100) + "%";
+  trilho.appendChild(preenchimento);
+  bloco.appendChild(topo);
+  bloco.appendChild(trilho);
+  return bloco;
+}
+
+function criarKpi(rotulo, valor, nota, classeExtra) {
+  const cartao = criarElemento("div", "cartao " + (classeExtra || ""));
+  cartao.appendChild(criarElemento("p", "kpi-rotulo", rotulo));
+  cartao.appendChild(criarElemento("p", "kpi-valor", valor));
+  if (nota) cartao.appendChild(criarElemento("p", "kpi-nota", nota));
+  return cartao;
+}
+
+function encontrarMaiorCorrida(corridas, campo) {
+  // Em empate vale a corrida mais antiga (corridas vêm em ordem cronológica).
+  let melhor = null;
+  for (const corrida of corridas) {
+    if (corrida[campo] === null) continue;
+    if (melhor === null || corrida[campo] > melhor[campo]) melhor = corrida;
+  }
+  return melhor;
+}
+
+function sufixoDoAno() {
+  return anoSelecionado === null ? "" : " em " + anoSelecionado;
+}
+
+function desenharKpis() {
+  const indicadores = DADOS.indicadores;
+  const secao = document.getElementById("kpis");
+  secao.textContent = "";
+
+  const formaAtual = indicadores.maior_trecho_forma_atual_m;
+  const valorForma = formaAtual === null ? "—" : formatarKm(formaAtual) + " km";
+  const notaForma = "maior trecho contínuo correndo nos últimos " + indicadores.dias_janela_forma_atual + " dias";
+  const cartaoForma = criarKpi("Forma atual", valorForma, notaForma, "kpi-grande");
+  cartaoForma.appendChild(criarBarraMeta("Meta 1: 5 km", DADOS.metas_m.meta_5_km, indicadores.progresso_meta_5_km, formaAtual));
+  cartaoForma.appendChild(criarBarraMeta("Meta final: 10 km", DADOS.metas_m.meta_10_km, indicadores.progresso_meta_10_km, formaAtual));
+  secao.appendChild(cartaoForma);
+
+  const corridasDoRecorte = corridasFiltradas();
+
+  const corridaRecorde = encontrarMaiorCorrida(corridasDoRecorte, "maior_trecho_continuo_m");
+  const textoRecorde = corridaRecorde === null ? "—" : formatarKm(corridaRecorde.maior_trecho_continuo_m) + " km";
+  const notaRecorde = corridaRecorde === null ? "" : "em " + formatarDataIso(corridaRecorde.data_local);
+  secao.appendChild(criarKpi("Recorde de trecho contínuo" + sufixoDoAno(), textoRecorde, notaRecorde));
+
+  const corridaMaisLonga = encontrarMaiorCorrida(corridasDoRecorte, "distancia_total_m");
+  const textoMaisLonga = corridaMaisLonga === null ? "—" : formatarKm(corridaMaisLonga.distancia_total_m) + " km";
+  const notaMaisLonga = corridaMaisLonga === null ? "" : formatarDataIso(corridaMaisLonga.data_local);
+  secao.appendChild(criarKpi("Maior distância numa corrida" + sufixoDoAno(), textoMaisLonga, notaMaisLonga));
+
+  // O destaque é o intervalo sem correr (o que importa para a consistência);
+  // a data cheia "dd/mm/aaaa" não cabia no cartão de 1/6 da largura.
+  const ultima = indicadores.data_ultima_corrida;
+  const dias = indicadores.dias_desde_ultima_corrida;
+  let valorUltima = "—";
+  if (dias !== null) valorUltima = dias === 1 ? "1 dia" : dias + " dias";
+  if (dias === 0) valorUltima = "hoje";
+  const notaUltima = ultima === null ? "" : "última corrida em " + formatarDataIso(ultima);
+  secao.appendChild(criarKpi("Sem correr há", valorUltima, notaUltima));
+
+  secao.appendChild(criarKpi("Corridas nos últimos 30 dias", String(indicadores.corridas_ultimos_30_dias), ""));
+}
+
+/* ---------- legendas ---------- */
+function desenharLegenda(idElemento, itens) {
+  const elemento = document.getElementById(idElemento);
+  elemento.textContent = "";
+  for (const item of itens) {
+    const rotulo = criarElemento("span");
+    const chave = criarElemento("i", "chave " + item.forma);
+    if (item.cor) chave.style.background = item.cor;
+    rotulo.appendChild(chave);
+    rotulo.appendChild(document.createTextNode(item.nome));
+    elemento.appendChild(rotulo);
+  }
+}
+
+function existeEsteira() {
+  return corridasFiltradas().some((corrida) => corrida.esteira);
+}
+
+function itensLegendaLocal() {
+  if (!existeEsteira()) return [];
+  return [
+    { nome: "Rua", forma: "circulo", cor: cor("--serie-1") },
+    { nome: "Esteira", forma: "losango", cor: cor("--serie-1") },
+  ];
+}
+
+/* ---------- configuração comum dos gráficos ---------- */
+const graficos = [];
+
+const plugueLinhaVertical = {
+  id: "linhaVertical",
+  afterDatasetsDraw(grafico) {
+    if (!grafico.options.linhaVertical) return;
+    const ativos = grafico.tooltip ? grafico.tooltip.getActiveElements() : [];
+    if (!ativos.length) return;
+    const x = ativos[0].element.x;
+    const area = grafico.chartArea;
+    const contexto = grafico.ctx;
+    contexto.save();
+    contexto.strokeStyle = cor("--eixo");
+    contexto.lineWidth = 1;
+    contexto.beginPath();
+    contexto.moveTo(x, area.top);
+    contexto.lineTo(x, area.bottom);
+    contexto.stroke();
+    contexto.restore();
+  },
+};
+
+const plugueRotulosMeta = {
+  id: "rotulosMeta",
+  afterDatasetsDraw(grafico) {
+    const contexto = grafico.ctx;
+    const area = grafico.chartArea;
+    grafico.data.datasets.forEach((conjunto) => {
+      if (!conjunto.rotuloMeta) return;
+      const y = grafico.scales.y.getPixelForValue(conjunto.data[0].y);
+      contexto.save();
+      contexto.fillStyle = cor("--tinta-2");
+      contexto.font = "12px system-ui, sans-serif";
+      contexto.textBaseline = "bottom";
+      contexto.fillText(conjunto.rotuloMeta, area.left + 6, y - 4);
+      contexto.restore();
+    });
+  },
+};
+
+function limitesDoTempo() {
+  const folga = 10 * 24 * 3600 * 1000;
+  if (anoSelecionado !== null) {
+    // Ano fechado: 01/jan a 31/dez. Ano corrente: 01/jan até a data de geração.
+    // Meses sem corrida ficam visíveis de propósito: inatividade faz parte da história.
+    const inicioDoAno = new Date(anoSelecionado, 0, 1).getTime();
+    const fimDoAno = new Date(anoSelecionado, 11, 31, 23, 59, 59).getTime();
+    const agora = new Date(DADOS.gerado_em).getTime();
+    const anoCorrente = new Date(DADOS.gerado_em).getFullYear();
+    return { min: inicioDoAno, max: anoSelecionado === anoCorrente ? agora : fimDoAno };
+  }
+  const instantes = DADOS.corridas.map((corrida) => converterParaTimestamp(corrida.data_hora_local));
+  if (instantes.length === 0) {
+    const agora = Date.now();
+    return { min: agora - 30 * 24 * 3600 * 1000, max: agora };
+  }
+  return { min: Math.min(...instantes) - folga, max: Math.max(...instantes) + folga };
+}
+
+function montarTicksMensais(escala) {
+  const inicio = new Date(escala.min);
+  const fim = new Date(escala.max);
+  const totalMeses = (fim.getFullYear() - inicio.getFullYear()) * 12 + fim.getMonth() - inicio.getMonth() + 1;
+  const passo = Math.max(1, Math.ceil(totalMeses / 6));
+  const ticks = [];
+  let mes = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  if (mes.getTime() < escala.min) mes = new Date(mes.getFullYear(), mes.getMonth() + 1, 1);
+  while (mes.getTime() <= escala.max) {
+    ticks.push({ value: mes.getTime() });
+    mes = new Date(mes.getFullYear(), mes.getMonth() + passo, 1);
+  }
+  escala.ticks = ticks;
+}
+
+function escalaX() {
+  const limites = limitesDoTempo();
+  return {
+    type: "linear",
+    min: limites.min,
+    max: limites.max,
+    afterBuildTicks: montarTicksMensais,
+    ticks: { callback: (valor) => formatarRotuloMes(valor), color: cor("--tinta-muda"), maxRotation: 0 },
+    grid: { color: cor("--grade"), drawTicks: false },
+    border: { color: cor("--eixo") },
+  };
+}
+
+function escalaY(titulo, extras) {
+  return Object.assign({
+    title: { display: true, text: titulo, color: cor("--tinta-2") },
+    ticks: { color: cor("--tinta-muda") },
+    grid: { color: cor("--grade") },
+    border: { display: false },
+  }, extras || {});
+}
+
+function estiloTooltip() {
+  return {
+    backgroundColor: cor("--superficie"),
+    titleColor: cor("--tinta-2"),
+    bodyColor: cor("--tinta"),
+    borderColor: cor("--eixo"),
+    borderWidth: 1,
+    padding: 10,
+    boxPadding: 4,
+    usePointStyle: true,
+  };
+}
+
+function tituloTooltipData(itens) {
+  // O timestamp nasceu de startTimeLocal lido como hora local do navegador;
+  // ler de volta com getDate/getMonth devolve a mesma data. toISOString (UTC)
+  // empurrava corridas depois das 21:00 (Brasil) para o dia seguinte.
+  const data = new Date(itens[0].parsed.x);
+  const dia = String(data.getDate()).padStart(2, "0");
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  return dia + "/" + mes + "/" + data.getFullYear();
+}
+
+function corridasComValor(campo) {
+  return corridasFiltradas().map((corrida) => ({
+    x: converterParaTimestamp(corrida.data_hora_local),
+    y: corrida[campo],
+    esteira: corrida.esteira,
+  }));
+}
+
+function estiloPontos(dados) {
+  return {
+    pointStyle: dados.map((ponto) => (ponto.esteira ? "rectRot" : "circle")),
+    pointRadius: dados.map((ponto) => (ponto.esteira ? 6 : 5)),
+    pointHoverRadius: 8,
+    pointBorderColor: cor("--superficie"),
+    pointBorderWidth: 2,
+  };
+}
+
+function criarGraficoLinha(idCanvas, nome, campo, converter, tituloY, formatoTick, formatoValor, extrasY, linhasMeta) {
+  const dados = corridasComValor(campo).map((ponto) => ({
+    x: ponto.x,
+    y: ponto.y === null ? null : converter(ponto.y),
+    esteira: ponto.esteira,
+  }));
+  const conjuntos = [Object.assign({
+    label: nome,
+    data: dados,
+    borderColor: cor("--serie-1"),
+    backgroundColor: cor("--serie-1"),
+    borderWidth: 2,
+    spanGaps: true,
+    tension: 0,
+  }, estiloPontos(dados))];
+
+  (linhasMeta || []).forEach((meta) => {
+    const limites = limitesDoTempo();
+    conjuntos.push({
+      label: meta.rotulo,
+      rotuloMeta: meta.rotulo,
+      data: [{ x: limites.min, y: meta.valor }, { x: limites.max, y: meta.valor }],
+      borderColor: cor("--tinta-2"),
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      fill: false,
+    });
+  });
+
+  const grafico = new Chart(document.getElementById(idCanvas), {
+    type: "line",
+    data: { datasets: conjuntos },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      linhaVertical: true,
+      interaction: { mode: "nearest", axis: "x", intersect: false },
+      scales: { x: escalaX(), y: escalaY(tituloY, extrasY) },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          filter: (item) => !item.dataset.rotuloMeta,
+          callbacks: {
+            title: tituloTooltipData,
+            label: (item) => {
+              const local = item.raw.esteira ? " (esteira)" : "";
+              return formatoValor(item.parsed.y) + local;
+            },
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+/* ---------- gráficos específicos ---------- */
+function desenharGraficoTrecho() {
+  desenharLegenda("legenda-trecho", itensLegendaLocal().concat([{ nome: "Meta", forma: "tracejado" }]));
+  criarGraficoLinha(
+    "grafico-trecho", "Maior trecho contínuo", "maior_trecho_continuo_m",
+    (metros) => metros / 1000, "km", null,
+    (km) => NUMERO_2.format(km) + " km",
+    { min: 0, max: 10.5, ticks: { color: cor("--tinta-muda"), stepSize: 1 } },
+    [
+      { rotulo: "Meta 5 km", valor: DADOS.metas_m.meta_5_km / 1000 },
+      { rotulo: "Meta 10 km", valor: DADOS.metas_m.meta_10_km / 1000 },
+    ],
+  );
+}
+
+function desenharGraficoEmpilhado() {
+  desenharLegenda("legenda-empilhado", [
+    { nome: "Correndo", forma: "quadrado", cor: cor("--serie-1") },
+    { nome: "Caminhando", forma: "quadrado", cor: cor("--serie-2") },
+    { nome: "Parado", forma: "quadrado", cor: cor("--serie-3") },
+  ]);
+  const definicoes = [
+    { nome: "Correndo", campo: "distancia_correndo_m", variavel: "--serie-1" },
+    { nome: "Caminhando", campo: "distancia_caminhando_m", variavel: "--serie-2" },
+    { nome: "Parado", campo: "distancia_parado_m", variavel: "--serie-3" },
+  ];
+  const conjuntos = definicoes.map((definicao) => ({
+    label: definicao.nome,
+    data: corridasFiltradas().map((corrida) => ({
+      x: converterParaTimestamp(corrida.data_hora_local),
+      y: corrida[definicao.campo] === null ? null : corrida[definicao.campo] / 1000,
+    })),
+    backgroundColor: cor(definicao.variavel),
+    borderColor: cor("--superficie"),
+    borderWidth: 2,
+    borderRadius: 3,
+    borderSkipped: false,
+    barThickness: 10,
+    hoverBorderColor: cor("--tinta"),
+  }));
+  const escala = escalaX();
+  escala.stacked = true;
+  const grafico = new Chart(document.getElementById("grafico-empilhado"), {
+    type: "bar",
+    data: { datasets: conjuntos },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: "x", intersect: false },
+      scales: { x: escala, y: escalaY("km", { stacked: true, beginAtZero: true }) },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: tituloTooltipData,
+            label: (item) => NUMERO_2.format(item.parsed.y) + " km · " + item.dataset.label,
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+function desenharGraficoPace() {
+  desenharLegenda("legenda-pace", itensLegendaLocal());
+  criarGraficoLinha(
+    "grafico-pace", "Pace correndo", "pace_correndo_min_km",
+    (minutos) => minutos, "min/km (menor = mais rápido)", null,
+    (minutos) => formatarPace(minutos) + " min/km",
+    { reverse: true, ticks: { color: cor("--tinta-muda"), callback: (valor) => formatarPace(valor) } },
+    [],
+  );
+}
+
+function desenharGraficoEficiencia() {
+  desenharLegenda("legenda-eficiencia", itensLegendaLocal());
+  criarGraficoLinha(
+    "grafico-eficiencia", "Eficiência", "eficiencia_m_min_por_bpm",
+    (valor) => valor, "m/min por bpm (maior = melhor)", null,
+    (valor) => NUMERO_3.format(valor) + " m/min por bpm",
+    {},
+    [],
+  );
+}
+
+function criarGraficoSemanal(idCanvas, nome, campo, tituloY, formatoValor, extrasY) {
+  const semanas = semanasFiltradas();
+  const grafico = new Chart(document.getElementById(idCanvas), {
+    type: "bar",
+    data: {
+      labels: semanas.map((semana) => formatarSemana(semana.semana_inicio)),
+      datasets: [{
+        label: nome,
+        data: semanas.map((semana) => semana[campo]),
+        backgroundColor: cor("--serie-1"),
+        // ~80 semanas num cartão de celular dão barras de ~2 px: borda de 2 px
+        // na cor do fundo cobria a barra inteira. Sem borda e ocupando a
+        // categoria toda, a barra continua visível em qualquer largura.
+        borderWidth: 0,
+        borderRadius: 1,
+        barPercentage: 0.9,
+        categoryPercentage: 1.0,
+        hoverBackgroundColor: cor("--tinta"),
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        x: {
+          ticks: { color: cor("--tinta-muda"), maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+        y: escalaY(tituloY, Object.assign({ beginAtZero: true }, extrasY || {})),
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: (itens) => {
+              const semana = semanas[itens[0].dataIndex];
+              return "Semana de " + formatarDataIso(semana.semana_inicio);
+            },
+            label: (item) => formatoValor(item.parsed.y),
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+function desenharGraficosSemanais() {
+  criarGraficoSemanal("grafico-volume-km", "Quilômetros", "km_total", "km por semana", (km) => NUMERO_2.format(km) + " km");
+  criarGraficoSemanal("grafico-volume-n", "Corridas", "n_corridas", "corridas por semana", (n) => n + (n === 1 ? " corrida" : " corridas"), { ticks: { color: cor("--tinta-muda"), stepSize: 1, precision: 0 } });
+}
+
+/* ---------- tabela e rodapé ---------- */
+function celula(linha, texto) {
+  linha.appendChild(criarElemento("td", "", texto));
+}
+
+function desenharTabela() {
+  const corpo = document.querySelector("#tabela tbody");
+  corpo.textContent = "";
+  const maisRecentesPrimeiro = corridasFiltradas().slice().reverse();
+  for (const corrida of maisRecentesPrimeiro) {
+    const linha = document.createElement("tr");
+    celula(linha, formatarDataIso(corrida.data_local));
+    celula(linha, corrida.esteira ? "Esteira" : "Rua");
+    celula(linha, formatarKm(corrida.distancia_total_m));
+    celula(linha, formatarKm(corrida.distancia_correndo_m));
+    celula(linha, formatarKm(corrida.distancia_caminhando_m));
+    celula(linha, corrida.pct_tempo_correndo === null ? "—" : NUMERO_0.format(corrida.pct_tempo_correndo * 100) + "%");
+    celula(linha, corrida.maior_trecho_continuo_m === null ? "—" : NUMERO_0.format(corrida.maior_trecho_continuo_m));
+    celula(linha, formatarPace(corrida.pace_correndo_min_km));
+    celula(linha, corrida.fc_media_bpm === null ? "—" : NUMERO_0.format(corrida.fc_media_bpm));
+    celula(linha, corrida.eficiencia_m_min_por_bpm === null ? "—" : NUMERO_3.format(corrida.eficiencia_m_min_por_bpm));
+    corpo.appendChild(linha);
+  }
+}
+
+function desenharRodape() {
+  document.getElementById("rodape").textContent =
+    "Gerado em " + formatarDataHora(DADOS.gerado_em) +
+    " · Dados do Garmin atualizados em " + formatarDataHora(DADOS.dados_atualizados_em);
+}
+
+/* ---------- ciclo de desenho (refaz ao trocar claro/escuro) ---------- */
+function desenharTudo() {
+  graficos.forEach((grafico) => grafico.destroy());
+  graficos.length = 0;
+  desenharControleAno();
+  desenharResumoRecorte();
+  desenharKpis();
+  desenharGraficoTrecho();
+  desenharGraficoEmpilhado();
+  desenharGraficoPace();
+  desenharGraficoEficiencia();
+  desenharGraficosSemanais();
+  desenharTabela();
+  desenharRodape();
+}
+
+Chart.register(plugueLinhaVertical, plugueRotulosMeta);
+anoSelecionado = lerAnoDoHash();
+desenharTudo();
+window.addEventListener("hashchange", () => {
+  anoSelecionado = lerAnoDoHash();
+  desenharTudo();
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", desenharTudo);
+new MutationObserver(desenharTudo).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+</body>
+</html>

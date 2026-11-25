@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evolução na corrida</title>
+<style>
+  :root {
+    color-scheme: light;
+    --pagina: #f9f9f7;
+    --superficie: #fcfcfb;
+    --tinta: #0b0b0b;
+    --tinta-2: #52514e;
+    --tinta-muda: #898781;
+    --grade: #e1e0d9;
+    --eixo: #c3c2b7;
+    --borda: rgba(11, 11, 11, 0.10);
+    --serie-1: #2a78d6;
+    --serie-2: #eb6834;
+    --serie-3: #1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --pagina: #0d0d0d;
+      --superficie: #1a1a19;
+      --tinta: #f0efec;
+      --tinta-2: #c3c2b7;
+      --grade: #2c2c2a;
+      --eixo: #383835;
+      --borda: rgba(255, 255, 255, 0.10);
+      --serie-1: #3987e5;
+      --serie-2: #d95926;
+      --serie-3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --pagina: #0d0d0d;
+    --superficie: #1a1a19;
+    --tinta: #f0efec;
+    --tinta-2: #c3c2b7;
+    --grade: #2c2c2a;
+    --eixo: #383835;
+    --borda: rgba(255, 255, 255, 0.10);
+    --serie-1: #3987e5;
+    --serie-2: #d95926;
+    --serie-3: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--pagina);
+    color: var(--tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.4;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1rem; margin: 0 0 2px; }
+  .sub { color: var(--tinta-2); font-size: 0.875rem; margin: 0 0 12px; }
+
+  .cartao {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    margin: 16px 0 12px;
+  }
+  .kpi-grande { grid-column: span 2; }
+  .kpi-rotulo { color: var(--tinta-2); font-size: 0.8125rem; margin: 0 0 4px; }
+  .kpi-valor { font-size: 2rem; font-weight: 600; margin: 0; }
+  .kpi-nota { color: var(--tinta-2); font-size: 0.8125rem; margin: 2px 0 0; }
+
+  .meta { margin-top: 12px; }
+  .meta-topo {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: var(--tinta-2);
+    margin-bottom: 4px;
+  }
+  .meta-topo strong { color: var(--tinta); font-weight: 600; }
+  .trilho { height: 8px; border-radius: 4px; background: var(--grade); overflow: hidden; }
+  .preenchimento { height: 100%; border-radius: 4px; background: var(--serie-1); }
+
+  .grade-graficos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .cartao { min-width: 0; }
+  .cartao-grafico { padding: 16px 16px 12px; }
+  .area-grafico { position: relative; height: 280px; }
+  .area-grafico.baixa { height: 170px; margin-top: 8px; }
+  .legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 0.8125rem;
+    color: var(--tinta-2);
+    margin: 0 0 8px;
+  }
+  .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .chave { width: 10px; height: 10px; display: inline-block; }
+  .chave.quadrado { border-radius: 2px; }
+  .chave.circulo { border-radius: 50%; }
+  .chave.losango { transform: rotate(45deg) scale(0.85); border-radius: 1px; }
+  .chave.tracejado {
+    width: 16px; height: 0; border-top: 2px dashed var(--tinta-2);
+  }
+
+  .rolavel { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.8125rem; }
+  th, td { padding: 8px 10px; text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  thead th {
+    color: var(--tinta-2);
+    font-weight: 600;
+    border-bottom: 1px solid var(--eixo);
+  }
+  tbody td { border-bottom: 1px solid var(--grade); font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .filtro-ano { margin: 12px 0 8px; }
+  .segmentado {
+    display: inline-flex;
+    border: 1px solid var(--eixo);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--superficie);
+  }
+  .segmentado button {
+    font: inherit;
+    font-size: 0.875rem;
+    min-height: 40px;
+    min-width: 64px;
+    padding: 6px 16px;
+    border: 0;
+    border-left: 1px solid var(--eixo);
+    background: transparent;
+    color: var(--tinta-2);
+    cursor: pointer;
+  }
+  .segmentado button:first-child { border-left: 0; }
+  .segmentado button:hover { background: var(--grade); }
+  .segmentado button[aria-pressed="true"] {
+    background: var(--tinta);
+    color: var(--superficie);
+    font-weight: 600;
+  }
+  .segmentado button:focus-visible { outline: 2px solid var(--serie-1); outline-offset: -2px; }
+  .resumo-recorte { color: var(--tinta-2); font-size: 0.875rem; margin: 0 0 4px; }
+  .resumo-recorte strong { color: var(--tinta); font-weight: 600; }
+
+  footer { color: var(--tinta-2); font-size: 0.8125rem; margin-top: 16px; }
+
+  @media (max-width: 800px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kpi-grande { grid-column: span 2; }
+    .kpi-valor { font-size: 1.625rem; }
+    .area-grafico { height: 240px; }
+  }
+
+  /* Celular estreito: cartões de KPI em meia largura ficam com ~100 px e a
+     data "19/09/2026" estourava. Uma coluna resolve sem quebrar o número. */
+  @media (max-width: 480px) {
+    .kpis { grid-template-columns: minmax(0, 1fr); }
+    .kpi-grande { grid-column: span 1; }
+    .kpi-valor { white-space: nowrap; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Evolução na corrida</h1>
+  <p class="sub">Meta 1: correr 5 km sem parar. Meta final: 10 km. O trecho contínuo vem da detecção automática de corrida/caminhada da Garmin.</p>
+
+  <div class="filtro-ano">
+    <div class="segmentado" id="filtro-ano" role="group" aria-label="Filtrar por ano"></div>
+  </div>
+  <p class="resumo-recorte" id="resumo-recorte" aria-live="polite"></p>
+
+  <section class="kpis" id="kpis" aria-label="Indicadores principais"></section>
+
+  <section class="grade-graficos">
+    <article class="cartao cartao-grafico">
+      <h2>Maior trecho contínuo correndo, por corrida</h2>
+      <p class="sub">Métrica-mãe da meta: o maior segmento corrido sem caminhar nem parar. As linhas tracejadas são as metas.</p>
+      <div class="legenda" id="legenda-trecho"></div>
+      <div class="area-grafico"><canvas id="grafico-trecho" role="img" aria-label="Maior trecho contínuo correndo por corrida, em km, com linhas de meta em 5 e 10 km. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Distância por corrida: correndo, caminhando e parado</h2>
+      <p class="sub">Soma dos segmentos detectados pela Garmin em cada corrida.</p>
+      <div class="legenda" id="legenda-empilhado"></div>
+      <div class="area-grafico"><canvas id="grafico-empilhado" role="img" aria-label="Distância por corrida empilhada em correndo, caminhando e parado, em km. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Pace correndo</h2>
+      <p class="sub">Só o tempo e a distância dos trechos corridos. Menor é mais rápido (eixo invertido).</p>
+      <div class="legenda" id="legenda-pace"></div>
+      <div class="area-grafico"><canvas id="grafico-pace" role="img" aria-label="Pace correndo por corrida, em minutos por km. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Eficiência aeróbica</h2>
+      <p class="sub">Velocidade média nos trechos corridos dividida pela FC média (m/min por bpm). Maior é melhor condicionamento.</p>
+      <div class="legenda" id="legenda-eficiencia"></div>
+      <div class="area-grafico"><canvas id="grafico-eficiencia" role="img" aria-label="Eficiência aeróbica por corrida, em metros por minuto por batimento. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao cartao-grafico">
+      <h2>Volume semanal</h2>
+      <p class="sub">Semanas ISO (segunda a domingo), incluindo semanas sem corrida.</p>
+      <div class="area-grafico"><canvas id="grafico-volume-km" role="img" aria-label="Quilômetros corridos por semana. Dados na tabela abaixo."></canvas></div>
+      <div class="area-grafico baixa"><canvas id="grafico-volume-n" role="img" aria-label="Número de corridas por semana. Dados na tabela abaixo."></canvas></div>
+    </article>
+
+    <article class="cartao">
+      <h2>Todas as corridas</h2>
+      <p class="sub">Mais recente no topo.</p>
+      <div class="rolavel"><table id="tabela">
+        <thead><tr>
+          <th>Data</th><th>Local</th><th>Total (km)</th><th>Correndo (km)</th>
+          <th>Caminhando (km)</th><th>% tempo correndo</th><th>Maior trecho (m)</th>
+          <th>Pace correndo</th><th>FC média</th><th>Eficiência</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </article>
+  </section>
+
+  <footer id="rodape"></footer>
+</main>
+
+<script src="__URL_CHART_JS__"></script>
+<script>
+const DADOS = /*__DADOS_JSON__*/null;
+
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const FORMATO_2 = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+const NUMERO_2 = new Intl.NumberFormat("pt-BR", FORMATO_2);
+const NUMERO_0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+const NUMERO_3 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+/* ---------- formatadores ---------- */
+function formatarKm(metros) {
+  if (metros === null || metros === undefined) return "—";
+  return NUMERO_2.format(metros / 1000);
+}
+function formatarPace(minutosPorKm) {
+  if (minutosPorKm === null || minutosPorKm === undefined) return "—";
+  let minutos = Math.floor(minutosPorKm);
+  let segundos = Math.round((minutosPorKm - minutos) * 60);
+  if (segundos === 60) { minutos += 1; segundos = 0; }
+  return minutos + ":" + String(segundos).padStart(2, "0");
+}
+function formatarDataIso(textoIso) {
+  const partes = textoIso.slice(0, 10).split("-");
+  return partes[2] + "/" + partes[1] + "/" + partes[0];
+}
+function formatarDataHora(textoIso) {
+  if (!textoIso) return "—";
+  return formatarDataIso(textoIso) + " " + textoIso.slice(11, 16);
+}
+function formatarRotuloMes(timestamp) {
+  const data = new Date(timestamp);
+  return MESES[data.getMonth()] + "/" + String(data.getFullYear()).slice(2);
+}
+function formatarSemana(textoIso) {
+  const partes = textoIso.split("-");
+  return partes[2] + "/" + partes[1];
+}
+function converterParaTimestamp(textoDataHora) {
+  return new Date(textoDataHora.replace(" ", "T")).getTime();
+}
+function cor(nome) {
+  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+}
+
+/* ---------- filtro por ano ---------- */
+let anoSelecionado = null; // null = Todos
+
+function anoDaCorrida(corrida) {
+  return Number(corrida.data_local.slice(0, 4));
+}
+
+function anosDisponiveis() {
+  const anos = [];
+  for (const corrida of DADOS.corridas) {
+    const ano = anoDaCorrida(corrida);
+    if (!anos.includes(ano)) anos.push(ano);
+  }
+  return anos.sort((a, b) => a - b);
+}
+
+function corridasFiltradas() {
+  if (anoSelecionado === null) return DADOS.corridas;
+  return DADOS.corridas.filter((corrida) => anoDaCorrida(corrida) === anoSelecionado);
+}
+
+function anoIsoDaSemana(semanaInicioIso) {
+  // Ano ISO = ano da quinta-feira da semana (segunda + 3 dias).
+  const quinta = new Date(semanaInicioIso + "T12:00:00");
+  quinta.setDate(quinta.getDate() + 3);
+  return quinta.getFullYear();
+}
+
+function semanasFiltradas() {
+  if (anoSelecionado === null) return DADOS.volume_semanal;
+  return DADOS.volume_semanal.filter((semana) => anoIsoDaSemana(semana.semana_inicio) === anoSelecionado);
+}
+
+function lerAnoDoHash() {
+  const resultado = /^#ano=(\d{4})$/.exec(window.location.hash);
+  if (resultado === null) return null;
+  const ano = Number(resultado[1]);
+  return anosDisponiveis().includes(ano) ? ano : null;
+}
+
+function gravarAnoNoHash() {
+  const base = window.location.pathname + window.location.search;
+  const destino = anoSelecionado === null ? base : base + "#ano=" + anoSelecionado;
+  // Em URL data: ou visualizador isolado, replaceState lança SecurityError.
+  // Lembrar o ano é conveniência: o filtro tem de funcionar mesmo sem isso.
+  try {
+    window.history.replaceState(null, "", destino);
+  } catch (erro) {
+    console.info("Não foi possível gravar o ano na URL:", erro.name);
+  }
+}
+
+function selecionarAno(ano) {
+  anoSelecionado = ano;
+  desenharTudo();
+  gravarAnoNoHash();
+}
+
+function desenharControleAno() {
+  const grupo = document.getElementById("filtro-ano");
+  grupo.textContent = "";
+  const opcoes = [{ ano: null, texto: "Todos" }].concat(
+    anosDisponiveis().map((ano) => ({ ano: ano, texto: String(ano) })),
+  );
+  for (const opcao of opcoes) {
+    const botao = criarElemento("button", "", opcao.texto);
+    botao.type = "button";
+    botao.setAttribute("aria-pressed", String(opcao.ano === anoSelecionado));
+    botao.addEventListener("click", () => selecionarAno(opcao.ano));
+    grupo.appendChild(botao);
+  }
+}
+
+function desenharResumoRecorte() {
+  const corridas = corridasFiltradas();
+  let totalM = 0;
+  let correndoM = 0;
+  for (const corrida of corridas) {
+    totalM += corrida.distancia_total_m || 0;
+    correndoM += corrida.distancia_correndo_m || 0;
+  }
+  const elemento = document.getElementById("resumo-recorte");
+  elemento.textContent = "";
+  const rotuloCorridas = corridas.length === 1 ? " corrida" : " corridas";
+  const partes = [
+    String(corridas.length) + rotuloCorridas,
+    formatarKm(totalM) + " km no total",
+    formatarKm(correndoM) + " km correndo",
+  ];
+  elemento.appendChild(criarElemento("strong", "", partes[0]));
+  elemento.appendChild(document.createTextNode(" · " + partes[1] + " · " + partes[2]));
+}
+
+/* ---------- KPIs ---------- */
+function criarElemento(tag, classe, texto) {
+  const elemento = document.createElement(tag);
+  if (classe) elemento.className = classe;
+  if (texto !== undefined) elemento.textContent = texto;
+  return elemento;
+}
+
+function criarBarraMeta(rotulo, metaM, progresso, formaAtualM) {
+  const bloco = criarElemento("div", "meta");
+  const topo = criarElemento("div", "meta-topo");
+  topo.appendChild(criarElemento("span", "", rotulo));
+  const percentual = Math.round(progresso * 100);
+  const dias = DADOS.indicadores.dias_janela_forma_atual;
+  let situacao = "sem corridas nos últimos " + dias + " dias";
+  if (formaAtualM !== null) {
+    situacao = percentual + "% · faltam " + formatarKm(Math.max(metaM - formaAtualM, 0)) + " km";
+  }
+  topo.appendChild(criarElemento("strong", "", situacao));
+  const trilho = criarElemento("div", "trilho");
+  trilho.setAttribute("role", "progressbar");
+  trilho.setAttribute("aria-label", rotulo);
+  trilho.setAttribute("aria-valuemin", "0");
+  trilho.setAttribute("aria-valuemax", "100");
+  trilho.setAttribute("aria-valuenow", String(percentual));
+  const preenchimento = criarElemento("div", "preenchimento");
+  preenchimento.style.width = (progresso * 100) + "%";
+  trilho.appendChild(preenchimento);
+  bloco.appendChild(topo);
+  bloco.appendChild(trilho);
+  return bloco;
+}
+
+function criarKpi(rotulo, valor, nota, classeExtra) {
+  const cartao = criarElemento("div", "cartao " + (classeExtra || ""));
+  cartao.appendChild(criarElemento("p", "kpi-rotulo", rotulo));
+  cartao.appendChild(criarElemento("p", "kpi-valor", valor));
+  if (nota) cartao.appendChild(criarElemento("p", "kpi-nota", nota));
+  return cartao;
+}
+
+function encontrarMaiorCorrida(corridas, campo) {
+  // Em empate vale a corrida mais antiga (corridas vêm em ordem cronológica).
+  let melhor = null;
+  for (const corrida of corridas) {
+    if (corrida[campo] === null) continue;
+    if (melhor === null || corrida[campo] > melhor[campo]) melhor = corrida;
+  }
+  return melhor;
+}
+
+function sufixoDoAno() {
+  return anoSelecionado === null ? "" : " em " + anoSelecionado;
+}
+
+function desenharKpis() {
+  const indicadores = DADOS.indicadores;
+  const secao = document.getElementById("kpis");
+  secao.textContent = "";
+
+  const formaAtual = indicadores.maior_trecho_forma_atual_m;
+  const valorForma = formaAtual === null ? "—" : formatarKm(formaAtual) + " km";
+  const notaForma = "maior trecho contínuo correndo nos últimos " + indicadores.dias_janela_forma_atual + " dias";
+  const cartaoForma = criarKpi("Forma atual", valorForma, notaForma, "kpi-grande");
+  cartaoForma.appendChild(criarBarraMeta("Meta 1: 5 km", DADOS.metas_m.meta_5_km, indicadores.progresso_meta_5_km, formaAtual));
+  cartaoForma.appendChild(criarBarraMeta("Meta final: 10 km", DADOS.metas_m.meta_10_km, indicadores.progresso_meta_10_km, formaAtual));
+  secao.appendChild(cartaoForma);
+
+  const corridasDoRecorte = corridasFiltradas();
+
+  const corridaRecorde = encontrarMaiorCorrida(corridasDoRecorte, "maior_trecho_continuo_m");
+  const textoRecorde = corridaRecorde === null ? "—" : formatarKm(corridaRecorde.maior_trecho_continuo_m) + " km";
+  const notaRecorde = corridaRecorde === null ? "" : "em " + formatarDataIso(corridaRecorde.data_local);
+  secao.appendChild(criarKpi("Recorde de trecho contínuo" + sufixoDoAno(), textoRecorde, notaRecorde));
+
+  const corridaMaisLonga = encontrarMaiorCorrida(corridasDoRecorte, "distancia_total_m");
+  const textoMaisLonga = corridaMaisLonga === null ? "—" : formatarKm(corridaMaisLonga.distancia_total_m) + " km";
+  const notaMaisLonga = corridaMaisLonga === null ? "" : formatarDataIso(corridaMaisLonga.data_local);
+  secao.appendChild(criarKpi("Maior distância numa corrida" + sufixoDoAno(), textoMaisLonga, notaMaisLonga));
+
+  // O destaque é o intervalo sem correr (o que importa para a consistência);
+  // a data cheia "dd/mm/aaaa" não cabia no cartão de 1/6 da largura.
+  const ultima = indicadores.data_ultima_corrida;
+  const dias = indicadores.dias_desde_ultima_corrida;
+  let valorUltima = "—";
+  if (dias !== null) valorUltima = dias === 1 ? "1 dia" : dias + " dias";
+  if (dias === 0) valorUltima = "hoje";
+  const notaUltima = ultima === null ? "" : "última corrida em " + formatarDataIso(ultima);
+  secao.appendChild(criarKpi("Sem correr há", valorUltima, notaUltima));
+
+  secao.appendChild(criarKpi("Corridas nos últimos 30 dias", String(indicadores.corridas_ultimos_30_dias), ""));
+}
+
+/* ---------- legendas ---------- */
+function desenharLegenda(idElemento, itens) {
+  const elemento = document.getElementById(idElemento);
+  elemento.textContent = "";
+  for (const item of itens) {
+    const rotulo = criarElemento("span");
+    const chave = criarElemento("i", "chave " + item.forma);
+    if (item.cor) chave.style.background = item.cor;
+    rotulo.appendChild(chave);
+    rotulo.appendChild(document.createTextNode(item.nome));
+    elemento.appendChild(rotulo);
+  }
+}
+
+function existeEsteira() {
+  return corridasFiltradas().some((corrida) => corrida.esteira);
+}
+
+function itensLegendaLocal() {
+  if (!existeEsteira()) return [];
+  return [
+    { nome: "Rua", forma: "circulo", cor: cor("--serie-1") },
+    { nome: "Esteira", forma: "losango", cor: cor("--serie-1") },
+  ];
+}
+
+/* ---------- configuração comum dos gráficos ---------- */
+const graficos = [];
+
+const plugueLinhaVertical = {
+  id: "linhaVertical",
+  afterDatasetsDraw(grafico) {
+    if (!grafico.options.linhaVertical) return;
+    const ativos = grafico.tooltip ? grafico.tooltip.getActiveElements() : [];
+    if (!ativos.length) return;
+    const x = ativos[0].element.x;
+    const area = grafico.chartArea;
+    const contexto = grafico.ctx;
+    contexto.save();
+    contexto.strokeStyle = cor("--eixo");
+    contexto.lineWidth = 1;
+    contexto.beginPath();
+    contexto.moveTo(x, area.top);
+    contexto.lineTo(x, area.bottom);
+    contexto.stroke();
+    contexto.restore();
+  },
+};
+
+const plugueRotulosMeta = {
+  id: "rotulosMeta",
+  afterDatasetsDraw(grafico) {
+    const contexto = grafico.ctx;
+    const area = grafico.chartArea;
+    grafico.data.datasets.forEach((conjunto) => {
+      if (!conjunto.rotuloMeta) return;
+      const y = grafico.scales.y.getPixelForValue(conjunto.data[0].y);
+      contexto.save();
+      contexto.fillStyle = cor("--tinta-2");
+      contexto.font = "12px system-ui, sans-serif";
+      contexto.textBaseline = "bottom";
+      contexto.fillText(conjunto.rotuloMeta, area.left + 6, y - 4);
+      contexto.restore();
+    });
+  },
+};
+
+function limitesDoTempo() {
+  const folga = 10 * 24 * 3600 * 1000;
+  if (anoSelecionado !== null) {
+    // Ano fechado: 01/jan a 31/dez. Ano corrente: 01/jan até a data de geração.
+    // Meses sem corrida ficam visíveis de propósito: inatividade faz parte da história.
+    const inicioDoAno = new Date(anoSelecionado, 0, 1).getTime();
+    const fimDoAno = new Date(anoSelecionado, 11, 31, 23, 59, 59).getTime();
+    const agora = new Date(DADOS.gerado_em).getTime();
+    const anoCorrente = new Date(DADOS.gerado_em).getFullYear();
+    return { min: inicioDoAno, max: anoSelecionado === anoCorrente ? agora : fimDoAno };
+  }
+  const instantes = DADOS.corridas.map((corrida) => converterParaTimestamp(corrida.data_hora_local));
+  if (instantes.length === 0) {
+    const agora = Date.now();
+    return { min: agora - 30 * 24 * 3600 * 1000, max: agora };
+  }
+  return { min: Math.min(...instantes) - folga, max: Math.max(...instantes) + folga };
+}
+
+function montarTicksMensais(escala) {
+  const inicio = new Date(escala.min);
+  const fim = new Date(escala.max);
+  const totalMeses = (fim.getFullYear() - inicio.getFullYear()) * 12 + fim.getMonth() - inicio.getMonth() + 1;
+  const passo = Math.max(1, Math.ceil(totalMeses / 6));
+  const ticks = [];
+  let mes = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  if (mes.getTime() < escala.min) mes = new Date(mes.getFullYear(), mes.getMonth() + 1, 1);
+  while (mes.getTime() <= escala.max) {
+    ticks.push({ value: mes.getTime() });
+    mes = new Date(mes.getFullYear(), mes.getMonth() + passo, 1);
+  }
+  escala.ticks = ticks;
+}
+
+function escalaX() {
+  const limites = limitesDoTempo();
+  return {
+    type: "linear",
+    min: limites.min,
+    max: limites.max,
+    afterBuildTicks: montarTicksMensais,
+    ticks: { callback: (valor) => formatarRotuloMes(valor), color: cor("--tinta-muda"), maxRotation: 0 },
+    grid: { color: cor("--grade"), drawTicks: false },
+    border: { color: cor("--eixo") },
+  };
+}
+
+function escalaY(titulo, extras) {
+  return Object.assign({
+    title: { display: true, text: titulo, color: cor("--tinta-2") },
+    ticks: { color: cor("--tinta-muda") },
+    grid: { color: cor("--grade") },
+    border: { display: false },
+  }, extras || {});
+}
+
+function estiloTooltip() {
+  return {
+    backgroundColor: cor("--superficie"),
+    titleColor: cor("--tinta-2"),
+    bodyColor: cor("--tinta"),
+    borderColor: cor("--eixo"),
+    borderWidth: 1,
+    padding: 10,
+    boxPadding: 4,
+    usePointStyle: true,
+  };
+}
+
+function tituloTooltipData(itens) {
+  // O timestamp nasceu de startTimeLocal lido como hora local do navegador;
+  // ler de volta com getDate/getMonth devolve a mesma data. toISOString (UTC)
+  // empurrava corridas depois das 21:00 (Brasil) para o dia seguinte.
+  const data = new Date(itens[0].parsed.x);
+  const dia = String(data.getDate()).padStart(2, "0");
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  return dia + "/" + mes + "/" + data.getFullYear();
+}
+
+function corridasComValor(campo) {
+  return corridasFiltradas().map((corrida) => ({
+    x: converterParaTimestamp(corrida.data_hora_local),
+    y: corrida[campo],
+    esteira: corrida.esteira,
+  }));
+}
+
+function estiloPontos(dados) {
+  return {
+    pointStyle: dados.map((ponto) => (ponto.esteira ? "rectRot" : "circle")),
+    pointRadius: dados.map((ponto) => (ponto.esteira ? 6 : 5)),
+    pointHoverRadius: 8,
+    pointBorderColor: cor("--superficie"),
+    pointBorderWidth: 2,
+  };
+}
+
+function criarGraficoLinha(idCanvas, nome, campo, converter, tituloY, formatoTick, formatoValor, extrasY, linhasMeta) {
+  const dados = corridasComValor(campo).map((ponto) => ({
+    x: ponto.x,
+    y: ponto.y === null ? null : converter(ponto.y),
+    esteira: ponto.esteira,
+  }));
+  const conjuntos = [Object.assign({
+    label: nome,
+    data: dados,
+    borderColor: cor("--serie-1"),
+    backgroundColor: cor("--serie-1"),
+    borderWidth: 2,
+    spanGaps: true,
+    tension: 0,
+  }, estiloPontos(dados))];
+
+  (linhasMeta || []).forEach((meta) => {
+    const limites = limitesDoTempo();
+    conjuntos.push({
+      label: meta.rotulo,
+      rotuloMeta: meta.rotulo,
+      data: [{ x: limites.min, y: meta.valor }, { x: limites.max, y: meta.valor }],
+      borderColor: cor("--tinta-2"),
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      fill: false,
+    });
+  });
+
+  const grafico = new Chart(document.getElementById(idCanvas), {
+    type: "line",
+    data: { datasets: conjuntos },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      linhaVertical: true,
+      interaction: { mode: "nearest", axis: "x", intersect: false },
+      scales: { x: escalaX(), y: escalaY(tituloY, extrasY) },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          filter: (item) => !item.dataset.rotuloMeta,
+          callbacks: {
+            title: tituloTooltipData,
+            label: (item) => {
+              const local = item.raw.esteira ? " (esteira)" : "";
+              return formatoValor(item.parsed.y) + local;
+            },
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+/* ---------- gráficos específicos ---------- */
+function desenharGraficoTrecho() {
+  desenharLegenda("legenda-trecho", itensLegendaLocal().concat([{ nome: "Meta", forma: "tracejado" }]));
+  criarGraficoLinha(
+    "grafico-trecho", "Maior trecho contínuo", "maior_trecho_continuo_m",
+    (metros) => metros / 1000, "km", null,
+    (km) => NUMERO_2.format(km) + " km",
+    { min: 0, max: 10.5, ticks: { color: cor("--tinta-muda"), stepSize: 1 } },
+    [
+      { rotulo: "Meta 5 km", valor: DADOS.metas_m.meta_5_km / 1000 },
+      { rotulo: "Meta 10 km", valor: DADOS.metas_m.meta_10_km / 1000 },
+    ],
+  );
+}
+
+function desenharGraficoEmpilhado() {
+  desenharLegenda("legenda-empilhado", [
+    { nome: "Correndo", forma: "quadrado", cor: cor("--serie-1") },
+    { nome: "Caminhando", forma: "quadrado", cor: cor("--serie-2") },
+    { nome: "Parado", forma: "quadrado", cor: cor("--serie-3") },
+  ]);
+  const definicoes = [
+    { nome: "Correndo", campo: "distancia_correndo_m", variavel: "--serie-1" },
+    { nome: "Caminhando", campo: "distancia_caminhando_m", variavel: "--serie-2" },
+    { nome: "Parado", campo: "distancia_parado_m", variavel: "--serie-3" },
+  ];
+  const conjuntos = definicoes.map((definicao) => ({
+    label: definicao.nome,
+    data: corridasFiltradas().map((corrida) => ({
+      x: converterParaTimestamp(corrida.data_hora_local),
+      y: corrida[definicao.campo] === null ? null : corrida[definicao.campo] / 1000,
+    })),
+    backgroundColor: cor(definicao.variavel),
+    borderColor: cor("--superficie"),
+    borderWidth: 2,
+    borderRadius: 3,
+    borderSkipped: false,
+    barThickness: 10,
+    hoverBorderColor: cor("--tinta"),
+  }));
+  const escala = escalaX();
+  escala.stacked = true;
+  const grafico = new Chart(document.getElementById("grafico-empilhado"), {
+    type: "bar",
+    data: { datasets: conjuntos },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: "x", intersect: false },
+      scales: { x: escala, y: escalaY("km", { stacked: true, beginAtZero: true }) },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: tituloTooltipData,
+            label: (item) => NUMERO_2.format(item.parsed.y) + " km · " + item.dataset.label,
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+function desenharGraficoPace() {
+  desenharLegenda("legenda-pace", itensLegendaLocal());
+  criarGraficoLinha(
+    "grafico-pace", "Pace correndo", "pace_correndo_min_km",
+    (minutos) => minutos, "min/km (menor = mais rápido)", null,
+    (minutos) => formatarPace(minutos) + " min/km",
+    { reverse: true, ticks: { color: cor("--tinta-muda"), callback: (valor) => formatarPace(valor) } },
+    [],
+  );
+}
+
+function desenharGraficoEficiencia() {
+  desenharLegenda("legenda-eficiencia", itensLegendaLocal());
+  criarGraficoLinha(
+    "grafico-eficiencia", "Eficiência", "eficiencia_m_min_por_bpm",
+    (valor) => valor, "m/min por bpm (maior = melhor)", null,
+    (valor) => NUMERO_3.format(valor) + " m/min por bpm",
+    {},
+    [],
+  );
+}
+
+function criarGraficoSemanal(idCanvas, nome, campo, tituloY, formatoValor, extrasY) {
+  const semanas = semanasFiltradas();
+  const grafico = new Chart(document.getElementById(idCanvas), {
+    type: "bar",
+    data: {
+      labels: semanas.map((semana) => formatarSemana(semana.semana_inicio)),
+      datasets: [{
+        label: nome,
+        data: semanas.map((semana) => semana[campo]),
+        backgroundColor: cor("--serie-1"),
+        // ~80 semanas num cartão de celular dão barras de ~2 px: borda de 2 px
+        // na cor do fundo cobria a barra inteira. Sem borda e ocupando a
+        // categoria toda, a barra continua visível em qualquer largura.
+        borderWidth: 0,
+        borderRadius: 1,
+        barPercentage: 0.9,
+        categoryPercentage: 1.0,
+        hoverBackgroundColor: cor("--tinta"),
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        x: {
+          ticks: { color: cor("--tinta-muda"), maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+        y: escalaY(tituloY, Object.assign({ beginAtZero: true }, extrasY || {})),
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: (itens) => {
+              const semana = semanas[itens[0].dataIndex];
+              return "Semana de " + formatarDataIso(semana.semana_inicio);
+            },
+            label: (item) => formatoValor(item.parsed.y),
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+function desenharGraficosSemanais() {
+  criarGraficoSemanal("grafico-volume-km", "Quilômetros", "km_total", "km por semana", (km) => NUMERO_2.format(km) + " km");
+  criarGraficoSemanal("grafico-volume-n", "Corridas", "n_corridas", "corridas por semana", (n) => n + (n === 1 ? " corrida" : " corridas"), { ticks: { color: cor("--tinta-muda"), stepSize: 1, precision: 0 } });
+}
+
+/* ---------- tabela e rodapé ---------- */
+function celula(linha, texto) {
+  linha.appendChild(criarElemento("td", "", texto));
+}
+
+function desenharTabela() {
+  const corpo = document.querySelector("#tabela tbody");
+  corpo.textContent = "";
+  const maisRecentesPrimeiro = corridasFiltradas().slice().reverse();
+  for (const corrida of maisRecentesPrimeiro) {
+    const linha = document.createElement("tr");
+    celula(linha, formatarDataIso(corrida.data_local));
+    celula(linha, corrida.esteira ? "Esteira" : "Rua");
+    celula(linha, formatarKm(corrida.distancia_total_m));
+    celula(linha, formatarKm(corrida.distancia_correndo_m));
+    celula(linha, formatarKm(corrida.distancia_caminhando_m));
+    celula(linha, corrida.pct_tempo_correndo === null ? "—" : NUMERO_0.format(corrida.pct_tempo_correndo * 100) + "%");
+    celula(linha, corrida.maior_trecho_continuo_m === null ? "—" : NUMERO_0.format(corrida.maior_trecho_continuo_m));
+    celula(linha, formatarPace(corrida.pace_correndo_min_km));
+    celula(linha, corrida.fc_media_bpm === null ? "—" : NUMERO_0.format(corrida.fc_media_bpm));
+    celula(linha, corrida.eficiencia_m_min_por_bpm === null ? "—" : NUMERO_3.format(corrida.eficiencia_m_min_por_bpm));
+    corpo.appendChild(linha);
+  }
+}
+
+function desenharRodape() {
+  document.getElementById("rodape").textContent =
+    "Gerado em " + formatarDataHora(DADOS.gerado_em) +
+    " · Dados do Garmin atualizados em " + formatarDataHora(DADOS.dados_atualizados_em);
+}
+
+/* ---------- ciclo de desenho (refaz ao trocar claro/escuro) ---------- */
+function desenharTudo() {
+  graficos.forEach((grafico) => grafico.destroy());
+  graficos.length = 0;
+  desenharControleAno();
+  desenharResumoRecorte();
+  desenharKpis();
+  desenharGraficoTrecho();
+  desenharGraficoEmpilhado();
+  desenharGraficoPace();
+  desenharGraficoEficiencia();
+  desenharGraficosSemanais();
+  desenharTabela();
+  desenharRodape();
+}
+
+Chart.register(plugueLinhaVertical, plugueRotulosMeta);
+anoSelecionado = lerAnoDoHash();
+desenharTudo();
+window.addEventListener("hashchange", () => {
+  anoSelecionado = lerAnoDoHash();
+  desenharTudo();
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", desenharTudo);
+new MutationObserver(desenharTudo).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+</body>
+</html>

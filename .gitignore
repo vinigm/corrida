@@ -1,0 +1,10 @@
+# Dados brutos e processados (contêm GPS nos .fit)
+data/
+
+# Cache e temporários Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.html.tmp
+.DS_Store
