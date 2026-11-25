@@ -25,6 +25,11 @@
     --pilula-negativa-tinta: #9c2b1b;
     --pilula-neutra-fundo: #efefeb;
     --pilula-neutra-tinta: #52514e;
+    --zona-1: #9499a1;
+    --zona-2: #2a78d6;
+    --zona-3: #1baf7a;
+    --zona-4: #eb6834;
+    --zona-5: #d92b3a;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
@@ -46,6 +51,11 @@
       --pilula-negativa-tinta: #f5936c;
       --pilula-neutra-fundo: #2c2c2a;
       --pilula-neutra-tinta: #c3c2b7;
+      --zona-1: #7e848d;
+      --zona-2: #3987e5;
+      --zona-3: #199e70;
+      --zona-4: #e06d3b;
+      --zona-5: #e64856;
     }
   }
   :root[data-theme="dark"] {
@@ -67,6 +77,11 @@
     --pilula-negativa-tinta: #f5936c;
     --pilula-neutra-fundo: #2c2c2a;
     --pilula-neutra-tinta: #c3c2b7;
+    --zona-1: #7e848d;
+    --zona-2: #3987e5;
+    --zona-3: #199e70;
+    --zona-4: #e06d3b;
+    --zona-5: #e64856;
   }
 
   * { box-sizing: border-box; }
@@ -357,10 +372,17 @@
     color: var(--pilula-neutra-tinta);
   }
 
+  .grade-dupla-zonas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
   footer { color: var(--tinta-2); font-size: 0.8125rem; margin-top: 16px; }
 
   @media (max-width: 800px) {
     .grade-big-numbers { grid-template-columns: minmax(0, 1fr); }
+    .grade-dupla-zonas { grid-template-columns: minmax(0, 1fr); }
     .painel-ciclo { padding: 16px; }
     .card-big-valor { font-size: 2rem; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -418,6 +440,21 @@
           <tbody></tbody>
         </table></div>
       </article>
+
+      <div class="grade-dupla-zonas">
+        <article class="cartao cartao-grafico">
+          <h2>Zonas de FC — Resumo do Ciclo Atual</h2>
+          <p class="sub">Tempo total acumulado e proporção em cada zona de frequência cardíaca desde 21/11/2026.</p>
+          <div class="area-grafico"><canvas id="grafico-zonas-resumo" role="img" aria-label="Tempo acumulado por zona de frequência cardíaca no ciclo atual."></canvas></div>
+        </article>
+
+        <article class="cartao cartao-grafico">
+          <h2>Zonas de FC — Evolução por Corrida (%)</h2>
+          <p class="sub">Proporção do tempo em cada zona (Z1 a Z5) em cada treino do ciclo atual.</p>
+          <div class="legenda" id="legenda-zonas-ciclo"></div>
+          <div class="area-grafico"><canvas id="grafico-zonas-evolucao" role="img" aria-label="Distribuição percentual das zonas de frequência cardíaca por corrida no ciclo atual."></canvas></div>
+        </article>
+      </div>
     </section>
   </div>
 
@@ -842,6 +879,27 @@ const plugueRotulosBarrasCiclo = {
       contexto.font = "700 12.5px system-ui, -apple-system, sans-serif";
       contexto.fillStyle = cor("--tinta");
       contexto.fillText(item.kmTexto, x, y - 7);
+      contexto.restore();
+    });
+  },
+};
+
+const plugueRotulosZonasHorizontal = {
+  id: "rotulosZonasHorizontal",
+  afterDatasetsDraw(grafico) {
+    const opcoes = grafico.options.rotulosZonasHorizontal;
+    if (!opcoes || !opcoes.rotulos) return;
+    const contexto = grafico.ctx;
+    const meta = grafico.getDatasetMeta(0);
+    opcoes.rotulos.forEach((texto, i) => {
+      const barra = meta.data[i];
+      if (!barra) return;
+      contexto.save();
+      contexto.font = "600 12px system-ui, -apple-system, sans-serif";
+      contexto.fillStyle = cor("--tinta");
+      contexto.textBaseline = "middle";
+      contexto.textAlign = "left";
+      contexto.fillText(texto, barra.x + 8, barra.y);
       contexto.restore();
     });
   },
@@ -1347,6 +1405,171 @@ function desenharCicloAtual() {
 
   desenharGraficoCicloBarras(corridasCiclo);
   desenharTabelaCiclo(corridasCiclo);
+  desenharGraficosZonasCiclo(corridasCiclo);
+}
+
+const DEFINICOES_ZONAS_FC = [
+  { campo: "fc_zona_1_s", curto: "Z1 · Aquecimento", faixa: "99–119 bpm", variavel: "--zona-1" },
+  { campo: "fc_zona_2_s", curto: "Z2 · Fácil", faixa: "119–139 bpm", variavel: "--zona-2" },
+  { campo: "fc_zona_3_s", curto: "Z3 · Aeróbico", faixa: "139–152 bpm", variavel: "--zona-3" },
+  { campo: "fc_zona_4_s", curto: "Z4 · Limiar", faixa: "152–178 bpm", variavel: "--zona-4" },
+  { campo: "fc_zona_5_s", curto: "Z5 · Máximo", faixa: ">178 bpm", variavel: "--zona-5" },
+];
+
+function formatarDuracaoSegundos(segundos) {
+  const totalSeg = Math.round(segundos || 0);
+  if (totalSeg <= 0) return "0s";
+  const horas = Math.floor(totalSeg / 3600);
+  const minutos = Math.floor((totalSeg % 3600) / 60);
+  const seg = totalSeg % 60;
+  if (horas > 0) {
+    return horas + "h" + String(minutos).padStart(2, "0") + "m";
+  }
+  if (minutos > 0) {
+    return minutos + "m" + String(seg).padStart(2, "0") + "s";
+  }
+  return seg + "s";
+}
+
+function desenharGraficosZonasCiclo(corridasCiclo) {
+  // 1) Gráfico esquerdo: Barras Horizontais com o Resumo Acumulado do Ciclo (Z5 no topo -> Z1 na base)
+  const ordemResumo = DEFINICOES_ZONAS_FC.slice().reverse();
+  const totaisSeg = ordemResumo.map((z) =>
+    corridasCiclo.reduce((soma, c) => soma + (c[z.campo] || 0), 0),
+  );
+  const somaTotalZonasSeg = totaisSeg.reduce((a, b) => a + b, 0);
+  const percentuaisResumo = totaisSeg.map((s) => (somaTotalZonasSeg > 0 ? (s / somaTotalZonasSeg) * 100 : 0));
+  const rotulosDireita = totaisSeg.map((s, idx) =>
+    NUMERO_0.format(percentuaisResumo[idx]) + "% (" + formatarDuracaoSegundos(s) + ")",
+  );
+  const maiorPct = Math.max(...percentuaisResumo, 20);
+  const tetoXResumo = Math.min(115, Math.ceil((maiorPct + 25) / 10) * 10);
+
+  const graficoResumo = new Chart(document.getElementById("grafico-zonas-resumo"), {
+    type: "bar",
+    data: {
+      labels: ordemResumo.map((z) => z.curto + " (" + z.faixa + ")"),
+      datasets: [{
+        label: "% do tempo no ciclo",
+        data: percentuaisResumo,
+        backgroundColor: ordemResumo.map((z) => cor(z.variavel)),
+        borderRadius: 5,
+        barThickness: 26,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      rotulosZonasHorizontal: { rotulos: rotulosDireita },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: tetoXResumo,
+          ticks: {
+            color: cor("--tinta-muda"),
+            callback: (val) => (val <= 100 ? val + "%" : ""),
+          },
+          grid: { color: cor("--grade") },
+          border: { display: false },
+        },
+        y: {
+          ticks: { color: cor("--tinta"), font: { weight: "600", size: 11.5 } },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            label: (item) => {
+              const idx = item.dataIndex;
+              return rotulosDireita[idx] + " acumulado no ciclo";
+            },
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(graficoResumo);
+
+  // 2) Gráfico direito: Evolução por Corrida (100% empilhado Z1..Z5)
+  desenharLegenda(
+    "legenda-zonas-ciclo",
+    DEFINICOES_ZONAS_FC.map((z) => ({
+      nome: z.curto,
+      forma: "quadrado",
+      cor: cor(z.variavel),
+    })),
+  );
+
+  const rotulosDatas = corridasCiclo.map((c) => formatarDataIso(c.data_local));
+  const totaisPorCorrida = corridasCiclo.map((c) =>
+    DEFINICOES_ZONAS_FC.reduce((soma, z) => soma + (c[z.campo] || 0), 0),
+  );
+
+  const conjuntosEvolucao = DEFINICOES_ZONAS_FC.map((z) => ({
+    label: z.curto + " (" + z.faixa + ")",
+    campoSegundos: z.campo,
+    data: corridasCiclo.map((c, idx) => {
+      const totalC = totaisPorCorrida[idx];
+      return totalC > 0 ? ((c[z.campo] || 0) / totalC) * 100 : 0;
+    }),
+    backgroundColor: cor(z.variavel),
+    borderRadius: 2,
+    maxBarThickness: 52,
+  }));
+
+  const graficoEvolucao = new Chart(document.getElementById("grafico-zonas-evolucao"), {
+    type: "bar",
+    data: {
+      labels: rotulosDatas,
+      datasets: conjuntosEvolucao,
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: cor("--tinta"), font: { weight: "600" } },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+        y: escalaY("% do treino", {
+          stacked: true,
+          beginAtZero: true,
+          max: 100,
+          ticks: { color: cor("--tinta-muda"), stepSize: 20, callback: (v) => v + "%" },
+        }),
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: (itens) => {
+              const idx = itens[0].dataIndex;
+              const c = corridasCiclo[idx];
+              const fcInfo = c.fc_media_bpm ? " · FC " + NUMERO_0.format(c.fc_media_bpm) + "/" + NUMERO_0.format(c.fc_max_bpm || 0) + " bpm" : "";
+              return formatarDataIso(c.data_local) + fcInfo;
+            },
+            label: (item) => {
+              const idx = item.dataIndex;
+              const c = corridasCiclo[idx];
+              const seg = c[item.dataset.campoSegundos] || 0;
+              const pct = item.parsed.y || 0;
+              return item.dataset.label + ": " + NUMERO_0.format(pct) + "% (" + formatarDuracaoSegundos(seg) + ")";
+            },
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(graficoEvolucao);
 }
 
 function desenharGraficoCicloBarras(corridasCiclo) {
@@ -1534,7 +1757,7 @@ function desenharTudo() {
   desenharRodape();
 }
 
-Chart.register(plugueLinhaVertical, plugueRotulosMeta, plugueRotulosBarrasCiclo);
+Chart.register(plugueLinhaVertical, plugueRotulosMeta, plugueRotulosBarrasCiclo, plugueRotulosZonasHorizontal);
 anoSelecionado = lerAnoDoHash();
 if (anoSelecionado !== null) {
   alternarAba("historico");

@@ -30,6 +30,11 @@ COLUNAS_CORRIDAS = [
     "n_segmentos_correndo",
     "pace_correndo_min_km",
     "eficiencia_m_min_por_bpm",
+    "fc_zona_1_s",
+    "fc_zona_2_s",
+    "fc_zona_3_s",
+    "fc_zona_4_s",
+    "fc_zona_5_s",
 ]
 
 COLUNAS_SEGMENTOS = [
@@ -85,6 +90,11 @@ def montar_linha_corrida(atividade: dict, conteudo_fit: ConteudoFit) -> dict:
         "n_segmentos_correndo": metricas.n_segmentos_correndo,
         "pace_correndo_min_km": metricas.pace_correndo_min_km,
         "eficiencia_m_min_por_bpm": eficiencia,
+        "fc_zona_1_s": atividade.get("hrTimeInZone_1"),
+        "fc_zona_2_s": atividade.get("hrTimeInZone_2"),
+        "fc_zona_3_s": atividade.get("hrTimeInZone_3"),
+        "fc_zona_4_s": atividade.get("hrTimeInZone_4"),
+        "fc_zona_5_s": atividade.get("hrTimeInZone_5"),
     }
 
 
