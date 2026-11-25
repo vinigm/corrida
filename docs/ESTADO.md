@@ -22,9 +22,14 @@ Atualizado em 25/11/2026 · Fila viva: [`PENDENCIAS.md`](PENDENCIAS.md) · Índi
   - eficiência (m/min por bpm, só nos trechos rwd_run, descartando velocidade ou FC nula/zero).
 - **Segmentos** → `data/processed/segmentos.csv` (1 linha por segmento rwd).
 - **Painel** `dashboard.html` (e `index.html` para o GitHub Pages em `https://vinigm.github.io/corrida/`):
-  - KPIs: forma atual (90 dias) com barras rumo a 5 e 10 km, recorde, maior distância, dias sem correr, corridas em 30 dias;
-  - 5 gráficos (6 canvas);
-  - tabela de corridas;
+  - **Aba 1 — Início (Ciclo Atual, desde 21/11/2026):**
+    - Painel de 3 Big Numbers no estilo card destacado (`KM Total`, `KM Médio por Semana`, `KM Médio por Mês` considerando semanas/meses ativos com corrida no ciclo);
+    - Gráfico de barras diário (dias de corrida do ciclo) empilhando km correndo + caminhando, com rótulo no topo de cada barra mostrando o total em km e a variação percentual (`+12,5% vs ant.`) em relação à corrida anterior;
+    - Tabela do ciclo atual com coluna de pílula de variação percentual entre corridas e FC média/máxima.
+  - **Aba 2 — Histórico Completo:**
+    - KPIs: forma atual (90 dias) com barras rumo a 5 e 10 km, recorde, maior distância, dias sem correr, corridas em 30 dias;
+    - 5 gráficos (6 canvas);
+    - tabela de todas as corridas (incluindo variação % vs corrida anterior);
   - claro/escuro, de 320 px a desktop.
 - **Filtro por ano** (Todos · um botão por ano), lembrado em `#ano=AAAA` na URL quando o navegador permite.
   - **Filtra:** os gráficos por corrida (eixo de 01/jan a 31/dez, ou até hoje no ano corrente), a tabela, as semanas (pelo ano ISO, que é o ano da quinta-feira), o recorde, a maior distância e a linha-resumo do ano.

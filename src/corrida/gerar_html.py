@@ -7,7 +7,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from corrida.configuracao import DIAS_JANELA_FORMA_ATUAL, META_5_KM_M, META_10_KM_M, URL_CHART_JS
+from corrida.configuracao import (
+    DATA_INICIO_CICLO_ATUAL,
+    DIAS_JANELA_FORMA_ATUAL,
+    META_5_KM_M,
+    META_10_KM_M,
+    URL_CHART_JS,
+)
 from corrida.metricas import IndicadoresResumo
 
 ARQUIVO_TEMPLATE = Path(__file__).parent / "template_dashboard.html"
@@ -96,6 +102,7 @@ def montar_dados_dashboard(
         "volume_semanal": volume_para_registros(volume_semanal),
         "indicadores": indicadores_para_dicionario(indicadores),
         "metas_m": {"meta_5_km": META_5_KM_M, "meta_10_km": META_10_KM_M},
+        "data_inicio_ciclo_atual": DATA_INICIO_CICLO_ATUAL,
         "gerado_em": gerado_em.isoformat(timespec="seconds"),
         "dados_atualizados_em": texto_atualizacao,
     }

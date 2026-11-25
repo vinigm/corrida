@@ -43,4 +43,5 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
   - ✅ Relógio sincronizado: 25 corridas; forma atual de 2,03 km (41% da meta 1).
   - ✅ Filtro por ano no painel. Âncoras por ano conferidas no navegador: 2025 = 12 corridas / 38,76 km; 2026 = 13 / 38,24 km.
   - ✅ Repositório Git conectado a `vinigm/corrida` e GitHub Pages ativado (`index.html`).
+  - ✅ Aba "Início (Ciclo Atual)" desde 21/11/2026 com 3 Big Numbers (`KM Total`, `KM Médio por Semana`, `KM Médio por Mês`), gráfico de barras diário e variação % corrida a corrida.
   - ⏳ Troca da chave: com o Vinicius.

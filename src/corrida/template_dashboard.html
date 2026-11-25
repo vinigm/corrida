@@ -18,6 +18,13 @@
     --serie-1: #2a78d6;
     --serie-2: #eb6834;
     --serie-3: #1baf7a;
+    --destaque-azul: #1f4f91;
+    --pilula-positiva-fundo: #e7f6ef;
+    --pilula-positiva-tinta: #116b49;
+    --pilula-negativa-fundo: #fbeae7;
+    --pilula-negativa-tinta: #9c2b1b;
+    --pilula-neutra-fundo: #efefeb;
+    --pilula-neutra-tinta: #52514e;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
@@ -32,6 +39,13 @@
       --serie-1: #3987e5;
       --serie-2: #d95926;
       --serie-3: #199e70;
+      --destaque-azul: #4c94ef;
+      --pilula-positiva-fundo: rgba(25, 158, 112, 0.18);
+      --pilula-positiva-tinta: #5cd6a9;
+      --pilula-negativa-fundo: rgba(217, 89, 38, 0.18);
+      --pilula-negativa-tinta: #f5936c;
+      --pilula-neutra-fundo: #2c2c2a;
+      --pilula-neutra-tinta: #c3c2b7;
     }
   }
   :root[data-theme="dark"] {
@@ -46,6 +60,13 @@
     --serie-1: #3987e5;
     --serie-2: #d95926;
     --serie-3: #199e70;
+    --destaque-azul: #4c94ef;
+    --pilula-positiva-fundo: rgba(25, 158, 112, 0.18);
+    --pilula-positiva-tinta: #5cd6a9;
+    --pilula-negativa-fundo: rgba(217, 89, 38, 0.18);
+    --pilula-negativa-tinta: #f5936c;
+    --pilula-neutra-fundo: #2c2c2a;
+    --pilula-neutra-tinta: #c3c2b7;
   }
 
   * { box-sizing: border-box; }
@@ -156,9 +177,156 @@
   .resumo-recorte { color: var(--tinta-2); font-size: 0.875rem; margin: 0 0 4px; }
   .resumo-recorte strong { color: var(--tinta); font-weight: 600; }
 
+  /* ---------- Abas (Início vs Histórico) ---------- */
+  .abas-nav {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--grade);
+    margin: 16px 0 20px;
+    padding-bottom: 0;
+  }
+  .aba-botao {
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    padding: 10px 18px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--tinta-2);
+    cursor: pointer;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .aba-botao:hover { color: var(--tinta); }
+  .aba-botao[aria-selected="true"] {
+    color: var(--destaque-azul);
+    border-bottom-color: var(--destaque-azul);
+    font-weight: 600;
+  }
+  .aba-painel[hidden] { display: none; }
+
+  /* ---------- Painel Ciclo Atual (estilo Big Numbers do print) ---------- */
+  .painel-ciclo {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+  .painel-ciclo-topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 12px;
+    margin-bottom: 16px;
+  }
+  .painel-ciclo-titulo {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--destaque-azul);
+    margin: 0;
+    text-transform: uppercase;
+  }
+  .painel-ciclo-sub {
+    font-size: 0.875rem;
+    color: var(--tinta-2);
+    margin: 0;
+  }
+  .grade-big-numbers {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .card-big {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .card-big.destaque {
+    border: 2px solid var(--destaque-azul);
+  }
+  .card-big-rotulo {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tinta-2);
+    margin: 0 0 6px;
+  }
+  .card-big-valor {
+    font-size: 2.375rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--tinta);
+    margin: 0 0 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .card-big.destaque .card-big-valor {
+    color: var(--destaque-azul);
+  }
+  .card-big-pilula {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .card-big-pilula.positiva {
+    background: var(--pilula-positiva-fundo);
+    color: var(--pilula-positiva-tinta);
+  }
+  .card-big-pilula.negativa {
+    background: var(--pilula-negativa-fundo);
+    color: var(--pilula-negativa-tinta);
+  }
+  .card-big-pilula.neutra {
+    background: var(--pilula-neutra-fundo);
+    color: var(--pilula-neutra-tinta);
+  }
+  .card-big-linha {
+    font-size: 0.8125rem;
+    color: var(--tinta-2);
+    margin: 2px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .card-big-linha strong {
+    color: var(--tinta);
+    font-weight: 600;
+  }
+
+  .pilula-variacao {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .pilula-variacao.positiva {
+    background: var(--pilula-positiva-fundo);
+    color: var(--pilula-positiva-tinta);
+  }
+  .pilula-variacao.negativa {
+    background: var(--pilula-negativa-fundo);
+    color: var(--pilula-negativa-tinta);
+  }
+  .pilula-variacao.neutra {
+    background: var(--pilula-neutra-fundo);
+    color: var(--pilula-neutra-tinta);
+  }
+
   footer { color: var(--tinta-2); font-size: 0.8125rem; margin-top: 16px; }
 
   @media (max-width: 800px) {
+    .grade-big-numbers { grid-template-columns: minmax(0, 1fr); }
+    .painel-ciclo { padding: 16px; }
+    .card-big-valor { font-size: 2rem; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpi-grande { grid-column: span 2; }
     .kpi-valor { font-size: 1.625rem; }
@@ -179,62 +347,103 @@
   <h1>Evolução na corrida</h1>
   <p class="sub">Meta 1: correr 5 km sem parar. Meta final: 10 km. O trecho contínuo vem da detecção automática de corrida/caminhada da Garmin.</p>
 
-  <div class="filtro-ano">
-    <div class="segmentado" id="filtro-ano" role="group" aria-label="Filtrar por ano"></div>
+  <nav class="abas-nav" role="tablist" aria-label="Visões do painel">
+    <button type="button" class="aba-botao" id="tab-inicio" role="tab" aria-selected="true" aria-controls="painel-inicio">Início (Ciclo Atual)</button>
+    <button type="button" class="aba-botao" id="tab-historico" role="tab" aria-selected="false" aria-controls="painel-historico">Histórico Completo</button>
+  </nav>
+
+  <!-- ==================== ABA 1: INÍCIO (CICLO ATUAL) ==================== -->
+  <div id="painel-inicio" class="aba-painel" role="tabpanel" aria-labelledby="tab-inicio">
+    <section class="painel-ciclo" aria-label="Resumo do Ciclo Atual">
+      <div class="painel-ciclo-topo">
+        <h2 class="painel-ciclo-titulo">Ciclo Atual</h2>
+        <p class="painel-ciclo-sub" id="subtitulo-ciclo"></p>
+      </div>
+      <div class="grade-big-numbers" id="big-numbers-ciclo"></div>
+    </section>
+
+    <section class="grade-graficos">
+      <article class="cartao cartao-grafico">
+        <h2>Distância por dia de corrida no ciclo e evolução (%)</h2>
+        <p class="sub">Cada barra mostra o total percorrido no dia (correndo + caminhando) e a variação percentual em relação à corrida anterior.</p>
+        <div class="legenda" id="legenda-ciclo-barras"></div>
+        <div class="area-grafico"><canvas id="grafico-ciclo-barras" role="img" aria-label="Distância por dia de corrida no ciclo atual, em km, com variação percentual em relação à corrida anterior."></canvas></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Corridas do ciclo atual</h2>
+        <p class="sub">Evolução corrida a corrida desde a retomada em 21/11/2026 (mais recente no topo).</p>
+        <div class="rolavel"><table id="tabela-ciclo">
+          <thead><tr>
+            <th>Data</th><th>Local</th><th>Total (km)</th><th>Variação vs anterior</th>
+            <th>Correndo (km)</th><th>Caminhando (km)</th><th>% tempo correndo</th>
+            <th>Maior trecho (m)</th><th>Pace correndo</th><th>FC média / máx</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </article>
+    </section>
   </div>
-  <p class="resumo-recorte" id="resumo-recorte" aria-live="polite"></p>
 
-  <section class="kpis" id="kpis" aria-label="Indicadores principais"></section>
+  <!-- ==================== ABA 2: HISTÓRICO COMPLETO ==================== -->
+  <div id="painel-historico" class="aba-painel" role="tabpanel" aria-labelledby="tab-historico" hidden>
+    <div class="filtro-ano">
+      <div class="segmentado" id="filtro-ano" role="group" aria-label="Filtrar por ano"></div>
+    </div>
+    <p class="resumo-recorte" id="resumo-recorte" aria-live="polite"></p>
 
-  <section class="grade-graficos">
-    <article class="cartao cartao-grafico">
-      <h2>Maior trecho contínuo correndo, por corrida</h2>
-      <p class="sub">Métrica-mãe da meta: o maior segmento corrido sem caminhar nem parar. As linhas tracejadas são as metas.</p>
-      <div class="legenda" id="legenda-trecho"></div>
-      <div class="area-grafico"><canvas id="grafico-trecho" role="img" aria-label="Maior trecho contínuo correndo por corrida, em km, com linhas de meta em 5 e 10 km. Dados na tabela abaixo."></canvas></div>
-    </article>
+    <section class="kpis" id="kpis" aria-label="Indicadores principais"></section>
 
-    <article class="cartao cartao-grafico">
-      <h2>Distância por corrida: correndo, caminhando e parado</h2>
-      <p class="sub">Soma dos segmentos detectados pela Garmin em cada corrida.</p>
-      <div class="legenda" id="legenda-empilhado"></div>
-      <div class="area-grafico"><canvas id="grafico-empilhado" role="img" aria-label="Distância por corrida empilhada em correndo, caminhando e parado, em km. Dados na tabela abaixo."></canvas></div>
-    </article>
+    <section class="grade-graficos">
+      <article class="cartao cartao-grafico">
+        <h2>Maior trecho contínuo correndo, por corrida</h2>
+        <p class="sub">Métrica-mãe da meta: o maior segmento corrido sem caminhar nem parar. As linhas tracejadas são as metas.</p>
+        <div class="legenda" id="legenda-trecho"></div>
+        <div class="area-grafico"><canvas id="grafico-trecho" role="img" aria-label="Maior trecho contínuo correndo por corrida, em km, com linhas de meta em 5 e 10 km. Dados na tabela abaixo."></canvas></div>
+      </article>
 
-    <article class="cartao cartao-grafico">
-      <h2>Pace correndo</h2>
-      <p class="sub">Só o tempo e a distância dos trechos corridos. Menor é mais rápido (eixo invertido).</p>
-      <div class="legenda" id="legenda-pace"></div>
-      <div class="area-grafico"><canvas id="grafico-pace" role="img" aria-label="Pace correndo por corrida, em minutos por km. Dados na tabela abaixo."></canvas></div>
-    </article>
+      <article class="cartao cartao-grafico">
+        <h2>Distância por corrida: correndo, caminhando e parado</h2>
+        <p class="sub">Soma dos segmentos detectados pela Garmin em cada corrida.</p>
+        <div class="legenda" id="legenda-empilhado"></div>
+        <div class="area-grafico"><canvas id="grafico-empilhado" role="img" aria-label="Distância por corrida empilhada em correndo, caminhando e parado, em km. Dados na tabela abaixo."></canvas></div>
+      </article>
 
-    <article class="cartao cartao-grafico">
-      <h2>Eficiência aeróbica</h2>
-      <p class="sub">Velocidade média nos trechos corridos dividida pela FC média (m/min por bpm). Maior é melhor condicionamento.</p>
-      <div class="legenda" id="legenda-eficiencia"></div>
-      <div class="area-grafico"><canvas id="grafico-eficiencia" role="img" aria-label="Eficiência aeróbica por corrida, em metros por minuto por batimento. Dados na tabela abaixo."></canvas></div>
-    </article>
+      <article class="cartao cartao-grafico">
+        <h2>Pace correndo</h2>
+        <p class="sub">Só o tempo e a distância dos trechos corridos. Menor é mais rápido (eixo invertido).</p>
+        <div class="legenda" id="legenda-pace"></div>
+        <div class="area-grafico"><canvas id="grafico-pace" role="img" aria-label="Pace correndo por corrida, em minutos por km. Dados na tabela abaixo."></canvas></div>
+      </article>
 
-    <article class="cartao cartao-grafico">
-      <h2>Volume semanal</h2>
-      <p class="sub">Semanas ISO (segunda a domingo), incluindo semanas sem corrida.</p>
-      <div class="area-grafico"><canvas id="grafico-volume-km" role="img" aria-label="Quilômetros corridos por semana. Dados na tabela abaixo."></canvas></div>
-      <div class="area-grafico baixa"><canvas id="grafico-volume-n" role="img" aria-label="Número de corridas por semana. Dados na tabela abaixo."></canvas></div>
-    </article>
+      <article class="cartao cartao-grafico">
+        <h2>Eficiência aeróbica</h2>
+        <p class="sub">Velocidade média nos trechos corridos dividida pela FC média (m/min por bpm). Maior é melhor condicionamento.</p>
+        <div class="legenda" id="legenda-eficiencia"></div>
+        <div class="area-grafico"><canvas id="grafico-eficiencia" role="img" aria-label="Eficiência aeróbica por corrida, em metros por minuto por batimento. Dados na tabela abaixo."></canvas></div>
+      </article>
 
-    <article class="cartao">
-      <h2>Todas as corridas</h2>
-      <p class="sub">Mais recente no topo.</p>
-      <div class="rolavel"><table id="tabela">
-        <thead><tr>
-          <th>Data</th><th>Local</th><th>Total (km)</th><th>Correndo (km)</th>
-          <th>Caminhando (km)</th><th>% tempo correndo</th><th>Maior trecho (m)</th>
-          <th>Pace correndo</th><th>FC média</th><th>Eficiência</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table></div>
-    </article>
-  </section>
+      <article class="cartao cartao-grafico">
+        <h2>Volume semanal</h2>
+        <p class="sub">Semanas ISO (segunda a domingo), incluindo semanas sem corrida.</p>
+        <div class="area-grafico"><canvas id="grafico-volume-km" role="img" aria-label="Quilômetros corridos por semana. Dados na tabela abaixo."></canvas></div>
+        <div class="area-grafico baixa"><canvas id="grafico-volume-n" role="img" aria-label="Número de corridas por semana. Dados na tabela abaixo."></canvas></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Todas as corridas</h2>
+        <p class="sub">Mais recente no topo.</p>
+        <div class="rolavel"><table id="tabela">
+          <thead><tr>
+            <th>Data</th><th>Local</th><th>Total (km)</th><th>Variação vs anterior</th><th>Correndo (km)</th>
+            <th>Caminhando (km)</th><th>% tempo correndo</th><th>Maior trecho (m)</th>
+            <th>Pace correndo</th><th>FC média</th><th>Eficiência</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </article>
+    </section>
+  </div>
 
   <footer id="rodape"></footer>
 </main>
@@ -246,6 +455,7 @@ const DADOS = /*__DADOS_JSON__*/null;
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const FORMATO_2 = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
 const NUMERO_2 = new Intl.NumberFormat("pt-BR", FORMATO_2);
+const NUMERO_1 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const NUMERO_0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
 const NUMERO_3 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 
@@ -253,6 +463,36 @@ const NUMERO_3 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maxi
 function formatarKm(metros) {
   if (metros === null || metros === undefined) return "—";
   return NUMERO_2.format(metros / 1000);
+}
+function formatarVariacaoPct(fracao) {
+  if (fracao === null || fracao === undefined) return null;
+  const pct = fracao * 100;
+  const sinal = pct > 0 ? "+" : "";
+  return sinal + NUMERO_1.format(pct) + "%";
+}
+function calcularVariacaoDistancia(atualM, anteriorM) {
+  if (atualM === null || atualM === undefined || anteriorM === null || anteriorM === undefined || anteriorM <= 0) {
+    return null;
+  }
+  return (atualM - anteriorM) / anteriorM;
+}
+function criarPilulaVariacao(fracao, sufixo) {
+  if (fracao === null || fracao === undefined) {
+    return criarElemento("span", "pilula-variacao neutra", "1ª corrida");
+  }
+  const classe = fracao > 0 ? "positiva" : (fracao < 0 ? "negativa" : "neutra");
+  const texto = formatarVariacaoPct(fracao) + (sufixo || "");
+  return criarElemento("span", "pilula-variacao " + classe, texto);
+}
+function inicioDaSemanaIsoTexto(dataIso) {
+  const partes = dataIso.slice(0, 10).split("-").map(Number);
+  const d = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0);
+  const diaSemana = (d.getDay() + 6) % 7; // 0 = segunda, 6 = domingo
+  d.setDate(d.getDate() - diaSemana);
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return ano + "-" + mes + "-" + dia;
 }
 function formatarPace(minutosPorKm) {
   if (minutosPorKm === null || minutosPorKm === undefined) return "—";
@@ -532,6 +772,40 @@ const plugueRotulosMeta = {
       contexto.font = "12px system-ui, sans-serif";
       contexto.textBaseline = "bottom";
       contexto.fillText(conjunto.rotuloMeta, area.left + 6, y - 4);
+      contexto.restore();
+    });
+  },
+};
+
+const plugueRotulosBarrasCiclo = {
+  id: "rotulosBarrasCiclo",
+  afterDatasetsDraw(grafico) {
+    const opcoes = grafico.options.rotulosBarrasCiclo;
+    if (!opcoes || !opcoes.itens) return;
+    const contexto = grafico.ctx;
+    const meta0 = grafico.getDatasetMeta(0);
+    const meta1 = grafico.getDatasetMeta(1);
+    opcoes.itens.forEach((item, i) => {
+      const barraTopo = (meta1 && meta1.data[i]) ? meta1.data[i] : (meta0 && meta0.data[i]);
+      if (!barraTopo) return;
+      const x = barraTopo.x;
+      const y = barraTopo.y;
+      contexto.save();
+      contexto.textAlign = "center";
+      // Linha de cima: variação % (se existir)
+      if (item.variacaoTexto) {
+        contexto.font = "600 11.5px system-ui, -apple-system, sans-serif";
+        contexto.fillStyle = item.variacaoPositiva ? cor("--pilula-positiva-tinta") : (item.variacaoNegativa ? cor("--pilula-negativa-tinta") : cor("--tinta-2"));
+        contexto.fillText(item.variacaoTexto, x, y - 22);
+      } else {
+        contexto.font = "500 11px system-ui, -apple-system, sans-serif";
+        contexto.fillStyle = cor("--tinta-2");
+        contexto.fillText("1ª do ciclo", x, y - 22);
+      }
+      // Linha de baixo: km total
+      contexto.font = "700 12.5px system-ui, -apple-system, sans-serif";
+      contexto.fillStyle = cor("--tinta");
+      contexto.fillText(item.kmTexto, x, y - 7);
       contexto.restore();
     });
   },
@@ -840,15 +1114,286 @@ function celula(linha, texto) {
   linha.appendChild(criarElemento("td", "", texto));
 }
 
-function desenharTabela() {
-  const corpo = document.querySelector("#tabela tbody");
+function celulaElemento(linha, elemento) {
+  const td = document.createElement("td");
+  td.appendChild(elemento);
+  linha.appendChild(td);
+}
+
+/* ---------- ABA INÍCIO: CICLO ATUAL ---------- */
+function dataInicioCiclo() {
+  return DADOS.data_inicio_ciclo_atual || "2026-11-21";
+}
+
+function corridasDoCicloAtual() {
+  const inicio = dataInicioCiclo();
+  return DADOS.corridas.filter((corrida) => corrida.data_local >= inicio);
+}
+
+function criarCardBigNumber(opcoes) {
+  const card = criarElemento("div", "card-big" + (opcoes.destaque ? " destaque" : ""));
+  card.appendChild(criarElemento("p", "card-big-rotulo", opcoes.rotulo));
+  card.appendChild(criarElemento("p", "card-big-valor", opcoes.valor));
+  if (opcoes.pilulaTexto) {
+    card.appendChild(criarElemento("span", "card-big-pilula " + (opcoes.pilulaClasse || "neutra"), opcoes.pilulaTexto));
+  }
+  for (const PartesLinha of (opcoes.linhas || [])) {
+    const p = criarElemento("p", "card-big-linha");
+    for (const parte of PartesLinha) {
+      if (parte.negrito) {
+        p.appendChild(criarElemento("strong", "", parte.texto));
+      } else {
+        p.appendChild(document.createTextNode(parte.texto));
+      }
+    }
+    card.appendChild(p);
+  }
+  return card;
+}
+
+function desenharCicloAtual() {
+  const inicioIso = dataInicioCiclo();
+  const corridasCiclo = corridasDoCicloAtual();
+
+  let totalM = 0;
+  let correndoM = 0;
+  let caminhandoM = 0;
+  let maiorTrechoCicloM = 0;
+  const semanasSet = new Set();
+  const mesesSet = new Set();
+
+  for (const c of corridasCiclo) {
+    totalM += c.distancia_total_m || 0;
+    correndoM += c.distancia_correndo_m || 0;
+    caminhandoM += c.distancia_caminhando_m || 0;
+    if (c.maior_trecho_continuo_m !== null && c.maior_trecho_continuo_m > maiorTrechoCicloM) {
+      maiorTrechoCicloM = c.maior_trecho_continuo_m;
+    }
+    semanasSet.add(inicioDaSemanaIsoTexto(c.data_local));
+    mesesSet.add(c.data_local.slice(0, 7));
+  }
+
+  const nCorridas = corridasCiclo.length;
+  const nSemanas = Math.max(1, semanasSet.size);
+  const nMeses = Math.max(1, mesesSet.size);
+
+  const kmMedioSemanaM = totalM / nSemanas;
+  const kmMedioMesM = totalM / nMeses;
+
+  // Variação da última corrida em relação à penúltima do ciclo
+  let ultimaVariacao = null;
+  if (corridasCiclo.length >= 2) {
+    const ultima = corridasCiclo[corridasCiclo.length - 1];
+    const penultima = corridasCiclo[corridasCiclo.length - 2];
+    ultimaVariacao = calcularVariacaoDistancia(ultima.distancia_total_m, penultima.distancia_total_m);
+  }
+
+  // Subtítulo do cabeçalho do painel
+  const subtitulo = document.getElementById("subtitulo-ciclo");
+  const rotuloQtd = nCorridas === 1 ? "1 corrida" : nCorridas + " corridas";
+  let textoEvolucao = "Início em " + formatarDataIso(inicioIso) + " · " + rotuloQtd + " no ciclo";
+  if (ultimaVariacao !== null) {
+    textoEvolucao += " · Última corrida: " + formatarVariacaoPct(ultimaVariacao) + " vs corrida anterior";
+  }
+  subtitulo.textContent = textoEvolucao;
+
+  // Montar os 3 cards no estilo do print
+  const grade = document.getElementById("big-numbers-ciclo");
+  grade.textContent = "";
+
+  const pctCorrendoDistancia = totalM > 0 ? Math.round((correndoM / totalM) * 100) : 0;
+  let pilulaKmTotal = "Status: Retomada em andamento";
+  let classePilulaKmTotal = "positiva";
+  if (ultimaVariacao !== null) {
+    pilulaKmTotal = "Última corrida: " + formatarVariacaoPct(ultimaVariacao) + " vs anterior";
+    classePilulaKmTotal = ultimaVariacao >= 0 ? "positiva" : "negativa";
+  }
+
+  grade.appendChild(criarCardBigNumber({
+    destaque: true,
+    rotulo: "KM Total",
+    valor: formatarKm(totalM) + " km",
+    pilulaTexto: pilulaKmTotal,
+    pilulaClasse: classePilulaKmTotal,
+    linhas: [
+      [
+        { negrito: true, texto: "Correndo " + formatarKm(correndoM) + " km" },
+        { negrito: false, texto: " · " },
+        { negrito: true, texto: "caminhando " + formatarKm(caminhandoM) + " km" },
+        { negrito: false, texto: " (" + pctCorrendoDistancia + "% correndo)" },
+      ],
+      [
+        { negrito: true, texto: "Maior trecho contínuo: " + formatarKm(maiorTrechoCicloM) + " km" },
+        { negrito: false, texto: " · desde " + formatarDataIso(inicioIso) },
+      ],
+    ],
+  }));
+
+  const treinosPorSemana = NUMERO_1.format(nCorridas / nSemanas);
+  grade.appendChild(criarCardBigNumber({
+    destaque: false,
+    rotulo: "KM Médio por Semana",
+    valor: formatarKm(kmMedioSemanaM) + " km",
+    pilulaTexto: nSemanas === 1 ? "1 semana ativa no ciclo" : nSemanas + " semanas ativas no ciclo",
+    pilulaClasse: "neutra",
+    linhas: [
+      [
+        { negrito: true, texto: treinosPorSemana + " corridas/semana" },
+        { negrito: false, texto: " em média no ciclo" },
+      ],
+      [
+        { negrito: true, texto: "Correndo " + formatarKm(correndoM / nSemanas) + " km/sem" },
+        { negrito: false, texto: " · média por corrida " + formatarKm(nCorridas > 0 ? totalM / nCorridas : 0) + " km" },
+      ],
+    ],
+  }));
+
+  const ultimaCorrida = nCorridas > 0 ? corridasCiclo[nCorridas - 1] : null;
+  const fcUltimaTexto = (ultimaCorrida && ultimaCorrida.fc_media_bpm)
+    ? NUMERO_0.format(ultimaCorrida.fc_media_bpm) + " bpm méd (" + NUMERO_0.format(ultimaCorrida.fc_max_bpm || 0) + " máx)"
+    : "—";
+  grade.appendChild(criarCardBigNumber({
+    destaque: false,
+    rotulo: "KM Médio por Mês",
+    valor: formatarKm(kmMedioMesM) + " km",
+    pilulaTexto: nMeses === 1 ? "1 mês ativo (nov/2026)" : nMeses + " meses ativos no ciclo",
+    pilulaClasse: "neutra",
+    linhas: [
+      [
+        { negrito: true, texto: nCorridas + (nCorridas === 1 ? " corrida" : " corridas") + "/mês" },
+        { negrito: false, texto: " · pace última " + (ultimaCorrida ? formatarPace(ultimaCorrida.pace_correndo_min_km) : "—") + "/km" },
+      ],
+      [
+        { negrito: true, texto: "FC última: " + fcUltimaTexto },
+        { negrito: false, texto: " no ciclo atual" },
+      ],
+    ],
+  }));
+
+  desenharGraficoCicloBarras(corridasCiclo);
+  desenharTabelaCiclo(corridasCiclo);
+}
+
+function desenharGraficoCicloBarras(corridasCiclo) {
+  desenharLegenda("legenda-ciclo-barras", [
+    { nome: "Correndo (km)", forma: "quadrado", cor: cor("--serie-1") },
+    { nome: "Caminhando (km)", forma: "quadrado", cor: cor("--serie-2") },
+  ]);
+
+  const rotulos = corridasCiclo.map((c) => formatarDataIso(c.data_local));
+  const dadosCorrendo = corridasCiclo.map((c) => (c.distancia_correndo_m || 0) / 1000);
+  const dadosCaminhando = corridasCiclo.map((c) => (c.distancia_caminhando_m || 0) / 1000);
+
+  const itensRotuloTopo = corridasCiclo.map((c, idx) => {
+    const anterior = idx > 0 ? corridasCiclo[idx - 1] : null;
+    const variacao = anterior ? calcularVariacaoDistancia(c.distancia_total_m, anterior.distancia_total_m) : null;
+    return {
+      kmTexto: formatarKm(c.distancia_total_m) + " km",
+      variacaoTexto: variacao === null ? null : formatarVariacaoPct(variacao) + " vs ant.",
+      variacaoPositiva: variacao !== null && variacao > 0,
+      variacaoNegativa: variacao !== null && variacao < 0,
+    };
+  });
+
+  const maiorKm = corridasCiclo.reduce((max, c) => Math.max(max, (c.distancia_total_m || 0) / 1000), 1);
+  const tetoY = Math.ceil((maiorKm * 1.28) * 2) / 2;
+
+  const grafico = new Chart(document.getElementById("grafico-ciclo-barras"), {
+    type: "bar",
+    data: {
+      labels: rotulos,
+      datasets: [
+        {
+          label: "Correndo",
+          data: dadosCorrendo,
+          backgroundColor: cor("--serie-1"),
+          borderRadius: 4,
+          maxBarThickness: 56,
+        },
+        {
+          label: "Caminhando",
+          data: dadosCaminhando,
+          backgroundColor: cor("--serie-2"),
+          borderRadius: 4,
+          maxBarThickness: 56,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      rotulosBarrasCiclo: { itens: itensRotuloTopo },
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: cor("--tinta"), font: { weight: "600" } },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+        y: escalaY("km no dia", { stacked: true, beginAtZero: true, max: tetoY }),
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: (itens) => {
+              const idx = itens[0].dataIndex;
+              const c = corridasCiclo[idx];
+              const info = itensRotuloTopo[idx];
+              const sufixoVar = info.variacaoTexto ? " (" + info.variacaoTexto + ")" : " (1ª corrida do ciclo)";
+              return formatarDataIso(c.data_local) + " · Total: " + formatarKm(c.distancia_total_m) + " km" + sufixoVar;
+            },
+            label: (item) => NUMERO_2.format(item.parsed.y) + " km · " + item.dataset.label,
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+function desenharTabelaCiclo(corridasCiclo) {
+  const corpo = document.querySelector("#tabela-ciclo tbody");
   corpo.textContent = "";
-  const maisRecentesPrimeiro = corridasFiltradas().slice().reverse();
-  for (const corrida of maisRecentesPrimeiro) {
+  for (let i = corridasCiclo.length - 1; i >= 0; i--) {
+    const corrida = corridasCiclo[i];
+    const anterior = i > 0 ? corridasCiclo[i - 1] : null;
+    const variacao = anterior ? calcularVariacaoDistancia(corrida.distancia_total_m, anterior.distancia_total_m) : null;
+
     const linha = document.createElement("tr");
     celula(linha, formatarDataIso(corrida.data_local));
     celula(linha, corrida.esteira ? "Esteira" : "Rua");
     celula(linha, formatarKm(corrida.distancia_total_m));
+    celulaElemento(linha, criarPilulaVariacao(variacao));
+    celula(linha, formatarKm(corrida.distancia_correndo_m));
+    celula(linha, formatarKm(corrida.distancia_caminhando_m));
+    celula(linha, corrida.pct_tempo_correndo === null ? "—" : NUMERO_0.format(corrida.pct_tempo_correndo * 100) + "%");
+    celula(linha, corrida.maior_trecho_continuo_m === null ? "—" : NUMERO_0.format(corrida.maior_trecho_continuo_m));
+    celula(linha, formatarPace(corrida.pace_correndo_min_km));
+    const fcTexto = corrida.fc_media_bpm === null
+      ? "—"
+      : NUMERO_0.format(corrida.fc_media_bpm) + (corrida.fc_max_bpm ? " / " + NUMERO_0.format(corrida.fc_max_bpm) : "");
+    celula(linha, fcTexto);
+    corpo.appendChild(linha);
+  }
+}
+
+function desenharTabela() {
+  const corpo = document.querySelector("#tabela tbody");
+  corpo.textContent = "";
+  const filtradas = corridasFiltradas();
+  for (let i = filtradas.length - 1; i >= 0; i--) {
+    const corrida = filtradas[i];
+    const anterior = i > 0 ? filtradas[i - 1] : null;
+    const variacao = anterior ? calcularVariacaoDistancia(corrida.distancia_total_m, anterior.distancia_total_m) : null;
+
+    const linha = document.createElement("tr");
+    celula(linha, formatarDataIso(corrida.data_local));
+    celula(linha, corrida.esteira ? "Esteira" : "Rua");
+    celula(linha, formatarKm(corrida.distancia_total_m));
+    celulaElemento(linha, criarPilulaVariacao(variacao));
     celula(linha, formatarKm(corrida.distancia_correndo_m));
     celula(linha, formatarKm(corrida.distancia_caminhando_m));
     celula(linha, corrida.pct_tempo_correndo === null ? "—" : NUMERO_0.format(corrida.pct_tempo_correndo * 100) + "%");
@@ -866,10 +1411,27 @@ function desenharRodape() {
     " · Dados do Garmin atualizados em " + formatarDataHora(DADOS.dados_atualizados_em);
 }
 
+/* ---------- controle de abas ---------- */
+let abaAtiva = "inicio"; // "inicio" | "historico"
+
+function alternarAba(novaAba) {
+  abaAtiva = novaAba;
+  const ehInicio = abaAtiva === "inicio";
+  document.getElementById("tab-inicio").setAttribute("aria-selected", String(ehInicio));
+  document.getElementById("tab-historico").setAttribute("aria-selected", String(!ehInicio));
+  document.getElementById("painel-inicio").hidden = !ehInicio;
+  document.getElementById("painel-historico").hidden = ehInicio;
+  desenharTudo();
+}
+
+document.getElementById("tab-inicio").addEventListener("click", () => alternarAba("inicio"));
+document.getElementById("tab-historico").addEventListener("click", () => alternarAba("historico"));
+
 /* ---------- ciclo de desenho (refaz ao trocar claro/escuro) ---------- */
 function desenharTudo() {
   graficos.forEach((grafico) => grafico.destroy());
   graficos.length = 0;
+  desenharCicloAtual();
   desenharControleAno();
   desenharResumoRecorte();
   desenharKpis();
@@ -882,9 +1444,13 @@ function desenharTudo() {
   desenharRodape();
 }
 
-Chart.register(plugueLinhaVertical, plugueRotulosMeta);
+Chart.register(plugueLinhaVertical, plugueRotulosMeta, plugueRotulosBarrasCiclo);
 anoSelecionado = lerAnoDoHash();
-desenharTudo();
+if (anoSelecionado !== null) {
+  alternarAba("historico");
+} else {
+  desenharTudo();
+}
 window.addEventListener("hashchange", () => {
   anoSelecionado = lerAnoDoHash();
   desenharTudo();
