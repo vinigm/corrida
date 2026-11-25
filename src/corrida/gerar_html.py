@@ -58,6 +58,24 @@ def volume_para_registros(volume_semanal: pd.DataFrame) -> list[dict]:
     return registros
 
 
+def segmentos_para_registros(segmentos: pd.DataFrame | None) -> list[dict]:
+    """Converte o DataFrame de segmentos rwd em lista serializável."""
+    if segmentos is None or segmentos.empty:
+        return []
+    registros: list[dict] = []
+    for _, linha in segmentos.iterrows():
+        registros.append(
+            {
+                "id_atividade": int(linha["id_atividade"]),
+                "ordem": int(linha["ordem"]),
+                "tipo_segmento": str(linha["tipo_segmento"]),
+                "duracao_s": float(linha["duracao_s"]),
+                "distancia_m": float(linha["distancia_m"]),
+            }
+        )
+    return registros
+
+
 def indicadores_para_dicionario(indicadores: IndicadoresResumo) -> dict:
     """Converte os KPIs em dicionário serializável (datas em ISO)."""
     if indicadores.data_ultima_corrida is None:
@@ -90,6 +108,7 @@ def montar_dados_dashboard(
     indicadores: IndicadoresResumo,
     gerado_em: datetime,
     dados_atualizados_em: datetime | None,
+    segmentos: pd.DataFrame | None = None,
 ) -> dict:
     """Reúne tudo que o HTML precisa em um único dicionário JSON-serializável."""
     if dados_atualizados_em is None:
@@ -99,6 +118,7 @@ def montar_dados_dashboard(
 
     return {
         "corridas": corridas_para_registros(corridas),
+        "segmentos": segmentos_para_registros(segmentos),
         "volume_semanal": volume_para_registros(volume_semanal),
         "indicadores": indicadores_para_dicionario(indicadores),
         "metas_m": {"meta_5_km": META_5_KM_M, "meta_10_km": META_10_KM_M},

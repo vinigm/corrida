@@ -455,6 +455,13 @@
           <div class="area-grafico"><canvas id="grafico-zonas-evolucao" role="img" aria-label="Distribuição percentual das zonas de frequência cardíaca por corrida no ciclo atual."></canvas></div>
         </article>
       </div>
+
+      <article class="cartao cartao-grafico">
+        <h2>Raio-X ao longo dos km: onde corri e onde caminhei</h2>
+        <p class="sub">Linha do tempo espacial (de 0 km até o fim de cada corrida). Mostra o momento exato de cada trecho contínuo correndo e as pausas de caminhada.</p>
+        <div class="legenda" id="legenda-raiox-km"></div>
+        <div class="area-grafico" id="container-raiox-km"><canvas id="grafico-raiox-km" role="img" aria-label="Mapa ao longo dos quilômetros mostrando trechos correndo e caminhando em cada corrida do ciclo atual."></canvas></div>
+      </article>
     </section>
   </div>
 
@@ -900,6 +907,51 @@ const plugueRotulosZonasHorizontal = {
       contexto.textBaseline = "middle";
       contexto.textAlign = "left";
       contexto.fillText(texto, barra.x + 8, barra.y);
+      contexto.restore();
+    });
+  },
+};
+
+const plugueRotulosRaioXKm = {
+  id: "rotulosRaioXKm",
+  afterDatasetsDraw(grafico) {
+    const opcoes = grafico.options.rotulosRaioXKm;
+    if (!opcoes || !opcoes.totaisPorLinha) return;
+    const contexto = grafico.ctx;
+    const escalaX = grafico.scales.x;
+    const escalaY = grafico.scales.y;
+
+    // 1) Desenha o texto de trechos grandes dentro das barras (ex: "2,00 km")
+    grafico.data.datasets.forEach((dataset, dIdx) => {
+      const meta = grafico.getDatasetMeta(dIdx);
+      meta.data.forEach((barra, i) => {
+        const dado = dataset.data[i];
+        if (!dado || !Array.isArray(dado)) return;
+        const distKm = dado[1] - dado[0];
+        const larguraPx = Math.abs(barra.x - barra.base);
+        if (distKm >= 0.35 && larguraPx >= 44) {
+          contexto.save();
+          contexto.font = "700 11px system-ui, -apple-system, sans-serif";
+          contexto.fillStyle = "#ffffff";
+          contexto.textAlign = "center";
+          contexto.textBaseline = "middle";
+          const centroX = (barra.base + barra.x) / 2;
+          contexto.fillText(NUMERO_2.format(distKm) + " km", centroX, barra.y);
+          contexto.restore();
+        }
+      });
+    });
+
+    // 2) Desenha o total da corrida na ponta direita de cada faixa
+    opcoes.totaisPorLinha.forEach((info, idx) => {
+      const xFim = escalaX.getPixelForValue(info.kmFim);
+      const yLinha = escalaY.getPixelForValue(idx);
+      contexto.save();
+      contexto.font = "700 12px system-ui, -apple-system, sans-serif";
+      contexto.fillStyle = cor("--tinta");
+      contexto.textAlign = "left";
+      contexto.textBaseline = "middle";
+      contexto.fillText(info.texto, xFim + 8, yLinha);
       contexto.restore();
     });
   },
@@ -1406,6 +1458,149 @@ function desenharCicloAtual() {
   desenharGraficoCicloBarras(corridasCiclo);
   desenharTabelaCiclo(corridasCiclo);
   desenharGraficosZonasCiclo(corridasCiclo);
+  desenharGraficoRaioXKm(corridasCiclo);
+}
+
+function desenharGraficoRaioXKm(corridasCiclo) {
+  desenharLegenda("legenda-raiox-km", [
+    { nome: "Trecho correndo (com distância dentro da barra)", forma: "quadrado", cor: cor("--serie-1") },
+    { nome: "Pausa caminhando", forma: "quadrado", cor: cor("--serie-2") },
+  ]);
+
+  // Mais recente no topo para bater com a tabela
+  const corridasOrdenadas = corridasCiclo.slice().reverse();
+  const todosSegmentos = DADOS.segmentos || [];
+
+  const container = document.getElementById("container-raiox-km");
+  const alturaIdeal = Math.max(190, corridasOrdenadas.length * 56 + 50);
+  container.style.height = alturaIdeal + "px";
+
+  const faixasPorCorrida = corridasOrdenadas.map((corrida) => {
+    const segs = todosSegmentos
+      .filter((s) => s.id_atividade === corrida.id_atividade && s.distancia_m > 0.5)
+      .sort((a, b) => a.ordem - b.ordem);
+    let acumKm = 0;
+    const trechos = [];
+    for (const s of segs) {
+      const iniKm = acumKm;
+      const distKm = s.distancia_m / 1000;
+      const fimKm = iniKm + distKm;
+      acumKm = fimKm;
+      const paceMinKm = (s.distancia_m > 0 && s.duracao_s > 0) ? (s.duracao_s / 60) / distKm : null;
+      trechos.push({
+        tipo: s.tipo_segmento,
+        iniKm: iniKm,
+        fimKm: fimKm,
+        distanciaM: s.distancia_m,
+        duracaoS: s.duracao_s,
+        paceMinKm: paceMinKm,
+      });
+    }
+    return {
+      corrida: corrida,
+      trechos: trechos,
+      kmFim: acumKm,
+    };
+  });
+
+  const maxTrechos = faixasPorCorrida.reduce((max, f) => Math.max(max, f.trechos.length), 0);
+  const maiorKmFim = faixasPorCorrida.reduce((max, f) => Math.max(max, f.kmFim), 1);
+  const tetoX = Math.ceil((maiorKmFim + 0.65) * 2) / 2;
+
+  const conjuntos = [];
+  for (let k = 0; k < maxTrechos; k++) {
+    const dadosIntervalo = faixasPorCorrida.map((f) => {
+      const t = f.trechos[k];
+      return t ? [t.iniKm, t.fimKm] : null;
+    });
+    const coresFundo = faixasPorCorrida.map((f) => {
+      const t = f.trechos[k];
+      if (!t) return "transparent";
+      if (t.tipo === "rwd_run") return cor("--serie-1");
+      if (t.tipo === "rwd_walk") return cor("--serie-2");
+      return cor("--serie-3");
+    });
+    const detalhesTrecho = faixasPorCorrida.map((f) => f.trechos[k] || null);
+
+    conjuntos.push({
+      label: "Trecho " + (k + 1),
+      data: dadosIntervalo,
+      detalhes: detalhesTrecho,
+      backgroundColor: coresFundo,
+      borderColor: cor("--superficie"),
+      borderWidth: 1.5,
+      borderRadius: 4,
+      borderSkipped: false,
+      barThickness: 30,
+    });
+  }
+
+  const totaisPorLinha = faixasPorCorrida.map((f) => ({
+    kmFim: f.kmFim,
+    texto: formatarKm(f.corrida.distancia_total_m) + " km",
+  }));
+
+  const grafico = new Chart(document.getElementById("grafico-raiox-km"), {
+    type: "bar",
+    data: {
+      labels: faixasPorCorrida.map((f) => formatarDataIso(f.corrida.data_local)),
+      datasets: conjuntos,
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      rotulosRaioXKm: { totaisPorLinha: totaisPorLinha },
+      interaction: { mode: "nearest", intersect: true },
+      scales: {
+        x: {
+          min: 0,
+          max: tetoX,
+          title: { display: true, text: "Quilômetro da corrida (km)", color: cor("--tinta-2") },
+          ticks: {
+            color: cor("--tinta-muda"),
+            stepSize: 0.5,
+            callback: (v) => NUMERO_1.format(v) + " km",
+          },
+          grid: { color: cor("--grade") },
+          border: { color: cor("--eixo") },
+        },
+        y: {
+          stacked: true,
+          ticks: { color: cor("--tinta"), font: { weight: "600", size: 12.5 } },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: (itens) => {
+              const item = itens[0];
+              const f = faixasPorCorrida[item.dataIndex];
+              const t = item.dataset.detalhes[item.dataIndex];
+              if (!t) return formatarDataIso(f.corrida.data_local);
+              const nomeTipo = t.tipo === "rwd_run" ? "Correndo" : (t.tipo === "rwd_walk" ? "Caminhando" : "Parado");
+              return formatarDataIso(f.corrida.data_local) + " · " + nomeTipo + " (km " + NUMERO_2.format(t.iniKm) + " → " + NUMERO_2.format(t.fimKm) + ")";
+            },
+            label: (item) => {
+              const t = item.dataset.detalhes[item.dataIndex];
+              if (!t) return "";
+              const distTexto = t.distanciaM >= 1000
+                ? formatarKm(t.distanciaM) + " km (" + NUMERO_0.format(t.distanciaM) + " m)"
+                : NUMERO_0.format(t.distanciaM) + " m";
+              const tempoTexto = formatarDuracaoSegundos(t.duracaoS);
+              const paceTexto = (t.tipo === "rwd_run" && t.paceMinKm) ? " · Pace " + formatarPace(t.paceMinKm) + "/km" : "";
+              return "Distância: " + distTexto + " · Duração: " + tempoTexto + paceTexto;
+            },
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
 }
 
 const DEFINICOES_ZONAS_FC = [
@@ -1757,7 +1952,7 @@ function desenharTudo() {
   desenharRodape();
 }
 
-Chart.register(plugueLinhaVertical, plugueRotulosMeta, plugueRotulosBarrasCiclo, plugueRotulosZonasHorizontal);
+Chart.register(plugueLinhaVertical, plugueRotulosMeta, plugueRotulosBarrasCiclo, plugueRotulosZonasHorizontal, plugueRotulosRaioXKm);
 anoSelecionado = lerAnoDoHash();
 if (anoSelecionado !== null) {
   alternarAba("historico");

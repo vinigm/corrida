@@ -75,6 +75,7 @@ def gerar_dashboard(
     corridas: pd.DataFrame,
     caminhos: CaminhosProjeto,
     agora: datetime,
+    segmentos: pd.DataFrame | None = None,
 ) -> None:
     """Calcula volume semanal e KPIs e grava o `dashboard.html`."""
     hoje = agora.date()
@@ -102,8 +103,11 @@ def gerar_dashboard(
     else:
         dados_atualizados_em = None
 
+    if segmentos is None and caminhos.arquivo_segmentos.exists():
+        segmentos = pd.read_csv(caminhos.arquivo_segmentos)
+
     dados = montar_dados_dashboard(
-        corridas, volume_semanal, indicadores, agora, dados_atualizados_em
+        corridas, volume_semanal, indicadores, agora, dados_atualizados_em, segmentos
     )
     html = renderizar_html(dados)
     gravar_dashboard(html, caminhos.arquivo_dashboard)
@@ -124,7 +128,7 @@ def executar() -> None:
     corridas_resumo = ingerir(token, caminhos)
     corridas, segmentos = processar_corridas(corridas_resumo, caminhos)
     gravar_csvs(corridas, segmentos, caminhos)
-    gerar_dashboard(corridas, caminhos, datetime.now())
+    gerar_dashboard(corridas, caminhos, datetime.now(), segmentos)
 
 
 def principal() -> None:
