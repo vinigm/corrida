@@ -95,6 +95,8 @@
   main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 40px; }
   h1 { font-size: 1.5rem; margin: 0 0 4px; }
   h2 { font-size: 1rem; margin: 0 0 2px; }
+  .cartao-grafico h2 { margin-bottom: 10px; }
+  .cartao-grafico h2:has(+ .sub) { margin-bottom: 2px; }
   .sub { color: var(--tinta-2); font-size: 0.875rem; margin: 0 0 12px; }
 
   .cartao {
@@ -403,7 +405,6 @@
 <body>
 <main>
   <h1>Evolução na corrida</h1>
-  <p class="sub">Meta 1: correr 5 km sem parar. Meta final: 10 km. O trecho contínuo vem da detecção automática de corrida/caminhada da Garmin.</p>
 
   <nav class="abas-nav" role="tablist" aria-label="Visões do painel">
     <button type="button" class="aba-botao" id="tab-inicio" role="tab" aria-selected="true" aria-controls="painel-inicio">Início (Ciclo Atual)</button>
@@ -423,14 +424,12 @@
     <section class="grade-graficos">
       <article class="cartao cartao-grafico">
         <h2>Distância por dia de corrida no ciclo e evolução (%)</h2>
-        <p class="sub">Cada barra mostra o total percorrido no dia (correndo + caminhando) e a variação percentual em relação à corrida anterior.</p>
         <div class="legenda" id="legenda-ciclo-barras"></div>
         <div class="area-grafico"><canvas id="grafico-ciclo-barras" role="img" aria-label="Distância por dia de corrida no ciclo atual, em km, com variação percentual em relação à corrida anterior."></canvas></div>
       </article>
 
       <article class="cartao cartao-grafico">
         <h2>Raio-X ao longo dos km: onde corri e onde caminhei</h2>
-        <p class="sub">Linha do tempo espacial (de 0 km até o fim de cada corrida). Mostra o momento exato de cada trecho contínuo correndo e as pausas de caminhada.</p>
         <div class="legenda" id="legenda-raiox-km"></div>
         <div class="area-grafico" id="container-raiox-km"><canvas id="grafico-raiox-km" role="img" aria-label="Mapa ao longo dos quilômetros mostrando trechos correndo e caminhando em cada corrida do ciclo atual."></canvas></div>
       </article>
@@ -451,13 +450,11 @@
       <div class="grade-dupla-zonas">
         <article class="cartao cartao-grafico">
           <h2>Zonas de FC — Resumo do Ciclo Atual</h2>
-          <p class="sub">Tempo total acumulado e proporção em cada zona de frequência cardíaca desde 21/11/2026.</p>
           <div class="area-grafico"><canvas id="grafico-zonas-resumo" role="img" aria-label="Tempo acumulado por zona de frequência cardíaca no ciclo atual."></canvas></div>
         </article>
 
         <article class="cartao cartao-grafico">
           <h2>Zonas de FC — Evolução por Corrida (%)</h2>
-          <p class="sub">Proporção do tempo em cada zona (Z1 a Z5) em cada treino do ciclo atual.</p>
           <div class="legenda" id="legenda-zonas-ciclo"></div>
           <div class="area-grafico"><canvas id="grafico-zonas-evolucao" role="img" aria-label="Distribuição percentual das zonas de frequência cardíaca por corrida no ciclo atual."></canvas></div>
         </article>
@@ -1354,14 +1351,7 @@ function desenharCicloAtual() {
   // Subtítulo do cabeçalho do painel
   const subtitulo = document.getElementById("subtitulo-ciclo");
   const rotuloQtd = nCorridas === 1 ? "1 corrida" : nCorridas + " corridas";
-  let textoEvolucao = "Início em " + formatarDataIso(inicioIso) + " · " + rotuloQtd + " no ciclo";
-  if (ultimaVariacao !== null) {
-    textoEvolucao += " · Última: " + formatarVariacaoPct(ultimaVariacao) + " vs anterior";
-  }
-  if (variacaoAcumuladaCiclo !== null) {
-    textoEvolucao += " (" + formatarVariacaoPct(variacaoAcumuladaCiclo) + " desde a 1ª do ciclo)";
-  }
-  subtitulo.textContent = textoEvolucao;
+  subtitulo.textContent = "Início em " + formatarDataIso(inicioIso) + " · " + rotuloQtd + " no ciclo";
 
   // Montar os 3 cards no estilo do print
   const grade = document.getElementById("big-numbers-ciclo");
