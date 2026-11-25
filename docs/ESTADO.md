@@ -24,8 +24,8 @@ Atualizado em 25/11/2026 · Fila viva: [`PENDENCIAS.md`](PENDENCIAS.md) · Índi
 - **Painel** `dashboard.html` (e `index.html` para o GitHub Pages em `https://vinigm.github.io/corrida/`):
   - **Aba 1 — Início (Ciclo Atual, desde 21/11/2026):**
     - Painel de 3 Big Numbers no estilo card destacado (`KM Total`, `KM Médio por Semana`, `KM Médio por Mês` considerando semanas/meses ativos com corrida no ciclo);
-    - Gráfico de barras diário (dias de corrida do ciclo) empilhando km correndo + caminhando, com rótulo no topo de cada barra mostrando o total em km e a variação percentual (`+12,5% vs ant.`) em relação à corrida anterior;
-    - Tabela do ciclo atual com coluna de pílula de variação percentual entre corridas e FC média/máxima.
+    - Gráfico de barras diário (dias de corrida do ciclo) empilhando km correndo + caminhando, com rótulo no topo de cada barra mostrando o total em km, a variação percentual em relação à corrida anterior e a variação acumulada desde a 1ª corrida do ciclo (`+18,0% vs ant. · +32,8% acum.`);
+    - Tabela do ciclo atual com colunas de pílula de `Variação vs anterior` e `Variação vs 1ª corrida` (acumulada no ciclo), além de FC média/máxima.
   - **Aba 2 — Histórico Completo:**
     - KPIs: forma atual (90 dias) com barras rumo a 5 e 10 km, recorde, maior distância, dias sem correr, corridas em 30 dias;
     - 5 gráficos (6 canvas);

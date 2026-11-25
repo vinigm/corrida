@@ -375,7 +375,7 @@
         <p class="sub">Evolução corrida a corrida desde a retomada em 21/11/2026 (mais recente no topo).</p>
         <div class="rolavel"><table id="tabela-ciclo">
           <thead><tr>
-            <th>Data</th><th>Local</th><th>Total (km)</th><th>Variação vs anterior</th>
+            <th>Data</th><th>Local</th><th>Total (km)</th><th>Variação vs anterior</th><th>Variação vs 1ª corrida</th>
             <th>Correndo (km)</th><th>Caminhando (km)</th><th>% tempo correndo</th>
             <th>Maior trecho (m)</th><th>Pace correndo</th><th>FC média / máx</th>
           </tr></thead>
@@ -435,7 +435,7 @@
         <p class="sub">Mais recente no topo.</p>
         <div class="rolavel"><table id="tabela">
           <thead><tr>
-            <th>Data</th><th>Local</th><th>Total (km)</th><th>Variação vs anterior</th><th>Correndo (km)</th>
+            <th>Data</th><th>Local</th><th>Total (km)</th><th>Variação vs anterior</th><th>Variação vs 1ª corrida</th><th>Correndo (km)</th>
             <th>Caminhando (km)</th><th>% tempo correndo</th><th>Maior trecho (m)</th>
             <th>Pace correndo</th><th>FC média</th><th>Eficiência</th>
           </tr></thead>
@@ -476,9 +476,9 @@ function calcularVariacaoDistancia(atualM, anteriorM) {
   }
   return (atualM - anteriorM) / anteriorM;
 }
-function criarPilulaVariacao(fracao, sufixo) {
+function criarPilulaVariacao(fracao, sufixo, textoBase) {
   if (fracao === null || fracao === undefined) {
-    return criarElemento("span", "pilula-variacao neutra", "1ª corrida");
+    return criarElemento("span", "pilula-variacao neutra", textoBase || "1ª corrida");
   }
   const classe = fracao > 0 ? "positiva" : (fracao < 0 ? "negativa" : "neutra");
   const texto = formatarVariacaoPct(fracao) + (sufixo || "");
@@ -1180,12 +1180,15 @@ function desenharCicloAtual() {
   const kmMedioSemanaM = totalM / nSemanas;
   const kmMedioMesM = totalM / nMeses;
 
-  // Variação da última corrida em relação à penúltima do ciclo
+  // Variação da última corrida em relação à penúltima e em relação à 1ª do ciclo
   let ultimaVariacao = null;
+  let variacaoAcumuladaCiclo = null;
   if (corridasCiclo.length >= 2) {
     const ultima = corridasCiclo[corridasCiclo.length - 1];
     const penultima = corridasCiclo[corridasCiclo.length - 2];
+    const primeira = corridasCiclo[0];
     ultimaVariacao = calcularVariacaoDistancia(ultima.distancia_total_m, penultima.distancia_total_m);
+    variacaoAcumuladaCiclo = calcularVariacaoDistancia(ultima.distancia_total_m, primeira.distancia_total_m);
   }
 
   // Subtítulo do cabeçalho do painel
@@ -1193,7 +1196,10 @@ function desenharCicloAtual() {
   const rotuloQtd = nCorridas === 1 ? "1 corrida" : nCorridas + " corridas";
   let textoEvolucao = "Início em " + formatarDataIso(inicioIso) + " · " + rotuloQtd + " no ciclo";
   if (ultimaVariacao !== null) {
-    textoEvolucao += " · Última corrida: " + formatarVariacaoPct(ultimaVariacao) + " vs corrida anterior";
+    textoEvolucao += " · Última: " + formatarVariacaoPct(ultimaVariacao) + " vs anterior";
+  }
+  if (variacaoAcumuladaCiclo !== null) {
+    textoEvolucao += " (" + formatarVariacaoPct(variacaoAcumuladaCiclo) + " desde a 1ª do ciclo)";
   }
   subtitulo.textContent = textoEvolucao;
 
@@ -1204,9 +1210,9 @@ function desenharCicloAtual() {
   const pctCorrendoDistancia = totalM > 0 ? Math.round((correndoM / totalM) * 100) : 0;
   let pilulaKmTotal = "Status: Retomada em andamento";
   let classePilulaKmTotal = "positiva";
-  if (ultimaVariacao !== null) {
-    pilulaKmTotal = "Última corrida: " + formatarVariacaoPct(ultimaVariacao) + " vs anterior";
-    classePilulaKmTotal = ultimaVariacao >= 0 ? "positiva" : "negativa";
+  if (variacaoAcumuladaCiclo !== null) {
+    pilulaKmTotal = "Evolução no ciclo: " + formatarVariacaoPct(variacaoAcumuladaCiclo) + " vs 1ª corrida (" + formatarVariacaoPct(ultimaVariacao) + " vs anterior)";
+    classePilulaKmTotal = variacaoAcumuladaCiclo >= 0 ? "positiva" : "negativa";
   }
 
   grade.appendChild(criarCardBigNumber({
@@ -1284,14 +1290,23 @@ function desenharGraficoCicloBarras(corridasCiclo) {
   const dadosCorrendo = corridasCiclo.map((c) => (c.distancia_correndo_m || 0) / 1000);
   const dadosCaminhando = corridasCiclo.map((c) => (c.distancia_caminhando_m || 0) / 1000);
 
+  const primeiraCiclo = corridasCiclo.length > 0 ? corridasCiclo[0] : null;
   const itensRotuloTopo = corridasCiclo.map((c, idx) => {
     const anterior = idx > 0 ? corridasCiclo[idx - 1] : null;
-    const variacao = anterior ? calcularVariacaoDistancia(c.distancia_total_m, anterior.distancia_total_m) : null;
+    const variacaoAnt = anterior ? calcularVariacaoDistancia(c.distancia_total_m, anterior.distancia_total_m) : null;
+    const variacaoAcum = (idx > 0 && primeiraCiclo) ? calcularVariacaoDistancia(c.distancia_total_m, primeiraCiclo.distancia_total_m) : null;
+    let textoVar = null;
+    if (variacaoAnt !== null) {
+      textoVar = formatarVariacaoPct(variacaoAnt) + " vs ant.";
+      if (idx >= 2 && variacaoAcum !== null) {
+        textoVar += " · " + formatarVariacaoPct(variacaoAcum) + " acum.";
+      }
+    }
     return {
       kmTexto: formatarKm(c.distancia_total_m) + " km",
-      variacaoTexto: variacao === null ? null : formatarVariacaoPct(variacao) + " vs ant.",
-      variacaoPositiva: variacao !== null && variacao > 0,
-      variacaoNegativa: variacao !== null && variacao < 0,
+      variacaoTexto: textoVar,
+      variacaoPositiva: (variacaoAcum !== null ? variacaoAcum : variacaoAnt) > 0,
+      variacaoNegativa: (variacaoAcum !== null ? variacaoAcum : variacaoAnt) < 0,
     };
   });
 
@@ -1357,16 +1372,19 @@ function desenharGraficoCicloBarras(corridasCiclo) {
 function desenharTabelaCiclo(corridasCiclo) {
   const corpo = document.querySelector("#tabela-ciclo tbody");
   corpo.textContent = "";
+  const primeira = corridasCiclo.length > 0 ? corridasCiclo[0] : null;
   for (let i = corridasCiclo.length - 1; i >= 0; i--) {
     const corrida = corridasCiclo[i];
     const anterior = i > 0 ? corridasCiclo[i - 1] : null;
-    const variacao = anterior ? calcularVariacaoDistancia(corrida.distancia_total_m, anterior.distancia_total_m) : null;
+    const variacaoAnterior = anterior ? calcularVariacaoDistancia(corrida.distancia_total_m, anterior.distancia_total_m) : null;
+    const variacaoAcumulada = (i > 0 && primeira) ? calcularVariacaoDistancia(corrida.distancia_total_m, primeira.distancia_total_m) : null;
 
     const linha = document.createElement("tr");
     celula(linha, formatarDataIso(corrida.data_local));
     celula(linha, corrida.esteira ? "Esteira" : "Rua");
     celula(linha, formatarKm(corrida.distancia_total_m));
-    celulaElemento(linha, criarPilulaVariacao(variacao));
+    celulaElemento(linha, criarPilulaVariacao(variacaoAnterior, "", "1ª corrida"));
+    celulaElemento(linha, criarPilulaVariacao(variacaoAcumulada, "", "Base (1ª)"));
     celula(linha, formatarKm(corrida.distancia_correndo_m));
     celula(linha, formatarKm(corrida.distancia_caminhando_m));
     celula(linha, corrida.pct_tempo_correndo === null ? "—" : NUMERO_0.format(corrida.pct_tempo_correndo * 100) + "%");
@@ -1384,16 +1402,19 @@ function desenharTabela() {
   const corpo = document.querySelector("#tabela tbody");
   corpo.textContent = "";
   const filtradas = corridasFiltradas();
+  const primeira = filtradas.length > 0 ? filtradas[0] : null;
   for (let i = filtradas.length - 1; i >= 0; i--) {
     const corrida = filtradas[i];
     const anterior = i > 0 ? filtradas[i - 1] : null;
-    const variacao = anterior ? calcularVariacaoDistancia(corrida.distancia_total_m, anterior.distancia_total_m) : null;
+    const variacaoAnterior = anterior ? calcularVariacaoDistancia(corrida.distancia_total_m, anterior.distancia_total_m) : null;
+    const variacaoAcumulada = (i > 0 && primeira) ? calcularVariacaoDistancia(corrida.distancia_total_m, primeira.distancia_total_m) : null;
 
     const linha = document.createElement("tr");
     celula(linha, formatarDataIso(corrida.data_local));
     celula(linha, corrida.esteira ? "Esteira" : "Rua");
     celula(linha, formatarKm(corrida.distancia_total_m));
-    celulaElemento(linha, criarPilulaVariacao(variacao));
+    celulaElemento(linha, criarPilulaVariacao(variacaoAnterior, "", "1ª corrida"));
+    celulaElemento(linha, criarPilulaVariacao(variacaoAcumulada, "", "Base (1ª)"));
     celula(linha, formatarKm(corrida.distancia_correndo_m));
     celula(linha, formatarKm(corrida.distancia_caminhando_m));
     celula(linha, corrida.pct_tempo_correndo === null ? "—" : NUMERO_0.format(corrida.pct_tempo_correndo * 100) + "%");
