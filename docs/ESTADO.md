@@ -36,20 +36,20 @@ Atualizado em 25/11/2026 · Fila viva: [`PENDENCIAS.md`](PENDENCIAS.md) · Índi
   - **Não filtra:** forma atual, barras de meta, "sem correr há" e corridas em 30 dias, que são indicadores do momento.
   - O volume semanal de 2025 começa na semana da 1ª corrida (05/05), não em janeiro.
 
-## Números-âncora (25/11/2026, após a sincronização do relógio)
+## Números-âncora (25/11/2026, 19h, após a corrida do dia)
 
-- **25 corridas** (24 rua + 1 esteira), de **11/05/2025** a **23/11/2026**.
+- **26 corridas** (25 rua + 1 esteira), de **11/05/2025** a **25/11/2026**.
   - 2025: **12** corridas, **38,76 km**.
-  - 2026: **13** corridas, **38,24 km**.
-- **77,00 km** no total, dos quais **69,95 km** correndo.
-- **260 segmentos** rwd; **82 semanas**, das quais **65 sem corrida**.
+  - 2026: **14** corridas, **41,81 km**.
+- **80,57 km** no total, dos quais **73,20 km** correndo.
+- **266 segmentos** rwd; **82 semanas**, das quais **65 sem corrida**.
 - **Recorde de trecho contínuo:** **5,52 km** em 18/05/2025.
 - **Forma atual (90 dias):** **2,03 km** (21/11/2026), o que dá **41%** da meta de 5 km.
 - **Certificação adversarial** sobre as 23 primeiras corridas:
   - recálculo independente com outro parser (`fitdecode`);
   - 1 divergência (velocidade zero entrando na eficiência), corrigida;
   - re-certificado: **APROVADO**.
-- **As 2 corridas novas** (21 e 23/11/2026) passaram pelo mesmo código certificado.
+- **As 3 corridas novas** (21, 23 e 25/11/2026) passaram pelo mesmo código certificado.
   - Spot-check contra a API: soma rwd e nº de segmentos batem com os `splitSummaries`.
 
 ## O que PREVÊ mas não faz
@@ -60,7 +60,7 @@ Atualizado em 25/11/2026 · Fila viva: [`PENDENCIAS.md`](PENDENCIAS.md) · Índi
 
 ## Limitações conhecidas (código)
 
-- O painel carrega **Chart.js 4.4.1 do jsDelivr**: precisa de internet para abrir.
+- O painel carrega **Chart.js 4.4.1 do jsDelivr**: precisa de internet para abrir. No navegador do app do Claude, o arquivo aberto direto vira URL `data:` e o CDN é bloqueado; para conferir lá, servir com `.claude/launch.json` (porta 8765).
 - "Dias sem correr" e as janelas de 30/90 dias ficam **congelados na hora da geração** (HTML estático). Para atualizar, rodar `./atualizar.sh`.
 - **Testes** (30, pytest) cobrem só as métricas puras. `parse_fit`, ingestão e HTML não têm teste.
 - Corrida com segmentos rwd mas **nenhum `rwd_run`** → maior trecho = **0** (não nulo). Não ocorre nos dados atuais.

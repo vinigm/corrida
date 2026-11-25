@@ -44,4 +44,5 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
   - ✅ Filtro por ano no painel. Âncoras por ano conferidas no navegador: 2025 = 12 corridas / 38,76 km; 2026 = 13 / 38,24 km.
   - ✅ Repositório Git conectado a `vinigm/corrida` e GitHub Pages ativado (`index.html`).
   - ✅ Aba "Início (Ciclo Atual)" desde 21/11/2026 com 3 Big Numbers (`KM Total`, `KM Médio por Semana`, `KM Médio por Mês`), gráfico de barras diário e variação % corrida a corrida.
+  - ✅ Corrida de 25/11/2026 ingerida: 3,56 km, trecho contínuo 2,00 km. Total: 26 corridas, 80,57 km.
   - ⏳ Troca da chave: com o Vinicius.
