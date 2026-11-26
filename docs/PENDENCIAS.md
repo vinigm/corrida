@@ -40,6 +40,7 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
   - ✅ Renovação de token vencido exercitada contra a API real.
   - ✅ Gráfico de linha do pace médio por corrida na aba Início. Conferido em 375 px.
   - ✅ Gráfico "Zonas de FC — Resumo" sem rótulos cortados no celular. Conferido em 320 px, 375 px e desktop.
+  - ✅ Gráfico de linha de FC média e máxima por corrida na aba Início. Conferido em 320 px, desktop e modo escuro.
 - **25/11/2026**
   - ✅ Personal API conectada; token e chave fora do Drive.
   - ✅ Pipeline com ingestão incremental, CSVs e `dashboard.html`. 30 testes.

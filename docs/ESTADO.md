@@ -27,6 +27,7 @@ Atualizado em 25/11/2026 · Fila viva: [`PENDENCIAS.md`](PENDENCIAS.md) · Índi
     - Painel de 3 Big Numbers no estilo card destacado (`KM Total`, `KM Médio por Semana`, `KM Médio por Mês` considerando semanas/meses ativos com corrida no ciclo);
     - Gráfico de barras diário (dias de corrida do ciclo) empilhando km correndo + caminhando, com rótulo no topo de cada barra mostrando o total em km, a variação percentual em relação à corrida anterior e a variação acumulada desde a 1ª corrida do ciclo (`+18,0% vs ant. · +32,8% acum.`);
     - Gráfico de linha **Pace médio por corrida no ciclo** (`pace_correndo_min_km`, o mesmo da tabela), eixo invertido (mais rápido no alto) e valor escrito em cada ponto;
+    - Gráfico de linha **Frequência cardíaca por corrida no ciclo**: FC média (vermelha) e FC máxima (cinza tracejada), de `fc_media_bpm` e `fc_max_bpm`, com o valor em cada ponto;
     - Tabela do ciclo atual com colunas de pílula de `Variação vs anterior` e `Variação vs 1ª corrida` (acumulada no ciclo), além de FC média/máxima;
     - Dois gráficos de Zonas de FC lado a lado embaixo da tabela: **Resumo do Ciclo Atual** (barras horizontais Z5→Z1 com `%` e tempo acumulado) e **Evolução por Corrida (%)** (barras 100% empilhadas Z1..Z5 por treino);
     - Gráfico **Raio-X ao longo dos km: onde corri e onde caminhei** no final da aba Início, mostrando na linha de `0 km` até a distância final de cada corrida os blocos exatos `[km_início, km_fim]` de corrida e de caminhada.

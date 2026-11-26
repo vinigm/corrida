@@ -434,6 +434,12 @@
       </article>
 
       <article class="cartao cartao-grafico">
+        <h2>Frequência cardíaca por corrida no ciclo</h2>
+        <div class="legenda" id="legenda-ciclo-fc"></div>
+        <div class="area-grafico"><canvas id="grafico-ciclo-fc" role="img" aria-label="Frequência cardíaca média e máxima por corrida do ciclo atual, em batimentos por minuto. Dados na tabela do ciclo."></canvas></div>
+      </article>
+
+      <article class="cartao cartao-grafico">
         <h2>Raio-X ao longo dos km: onde corri e onde caminhei</h2>
         <div class="legenda" id="legenda-raiox-km"></div>
         <div class="area-grafico" id="container-raiox-km"><canvas id="grafico-raiox-km" role="img" aria-label="Mapa ao longo dos quilômetros mostrando trechos correndo e caminhando em cada corrida do ciclo atual."></canvas></div>
@@ -969,23 +975,30 @@ const plugueRotulosRaioXKm = {
   },
 };
 
-// Escreve o valor (ex.: "6:22") acima de cada ponto do gráfico de pace do ciclo.
+// Escreve o valor de cada ponto nos gráficos de linha do ciclo (ex.: "6:22", "149").
+// Formatos aceitos em options.rotulosPontosCiclo:
+//   { textos: [...] }                                   → conjunto 0, rótulo acima do ponto;
+//   { conjuntos: [{ indice, textos, posicao, cor }] }   → vários conjuntos, "acima" ou "abaixo".
 const plugueRotulosPontosCiclo = {
   id: "rotulosPontosCiclo",
   afterDatasetsDraw(grafico) {
     const opcoes = grafico.options.rotulosPontosCiclo;
-    if (!opcoes || !opcoes.textos) return;
+    if (!opcoes) return;
+    const conjuntos = opcoes.conjuntos || (opcoes.textos ? [{ indice: 0, textos: opcoes.textos, posicao: "acima" }] : []);
     const contexto = grafico.ctx;
-    const meta = grafico.getDatasetMeta(0);
     contexto.save();
     contexto.font = "700 12px system-ui, -apple-system, sans-serif";
-    contexto.fillStyle = cor("--tinta");
     contexto.textAlign = "center";
-    contexto.textBaseline = "bottom";
-    opcoes.textos.forEach((texto, indice) => {
-      const ponto = meta.data[indice];
-      if (texto === null || !ponto) return;
-      contexto.fillText(texto, ponto.x, ponto.y - 10);
+    conjuntos.forEach((conjunto) => {
+      const meta = grafico.getDatasetMeta(conjunto.indice);
+      const abaixo = conjunto.posicao === "abaixo";
+      contexto.fillStyle = conjunto.cor || cor("--tinta");
+      contexto.textBaseline = abaixo ? "top" : "bottom";
+      conjunto.textos.forEach((texto, indice) => {
+        const ponto = meta.data[indice];
+        if (texto === null || !ponto) return;
+        contexto.fillText(texto, ponto.x, abaixo ? ponto.y + 10 : ponto.y - 10);
+      });
     });
     contexto.restore();
   },
@@ -1484,6 +1497,7 @@ function desenharCicloAtual() {
 
   desenharGraficoCicloBarras(corridasCiclo);
   desenharGraficoCicloPace(corridasCiclo);
+  desenharGraficoCicloFc(corridasCiclo);
   desenharTabelaCiclo(corridasCiclo);
   desenharGraficosZonasCiclo(corridasCiclo);
   desenharGraficoRaioXKm(corridasCiclo);
@@ -1973,6 +1987,98 @@ function desenharGraficoCicloPace(corridasCiclo) {
               const textoFc = corrida.fc_media_bpm ? " · FC média " + Math.round(corrida.fc_media_bpm) + " bpm" : "";
               return "Pace correndo " + formatarPace(item.parsed.y) + " /km" + textoFc;
             },
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
+function desenharGraficoCicloFc(corridasCiclo) {
+  desenharLegenda("legenda-ciclo-fc", [
+    { nome: "FC média", forma: "circulo", cor: cor("--zona-5") },
+    { nome: "FC máxima", forma: "tracejado" },
+  ]);
+
+  const rotulos = corridasCiclo.map((c) => formatarDataIso(c.data_local));
+  const bpmOuNulo = (valor) => (valor === null || valor === undefined || valor <= 0 ? null : valor);
+  const medias = corridasCiclo.map((c) => bpmOuNulo(c.fc_media_bpm));
+  const maximas = corridasCiclo.map((c) => bpmOuNulo(c.fc_max_bpm));
+  const textoBpm = (valor) => (valor === null ? null : NUMERO_0.format(valor));
+
+  // Folga de ~12 bpm abaixo da menor média e acima da maior máxima, em degraus de 10 bpm,
+  // para os rótulos (máxima acima do ponto, média abaixo) caberem dentro do gráfico.
+  const validos = medias.concat(maximas).filter((valor) => valor !== null);
+  const limites = validos.length === 0 ? {} : {
+    min: Math.floor((Math.min(...validos) - 12) / 10) * 10,
+    max: Math.ceil((Math.max(...validos) + 12) / 10) * 10,
+  };
+
+  const grafico = new Chart(document.getElementById("grafico-ciclo-fc"), {
+    type: "line",
+    data: {
+      labels: rotulos,
+      datasets: [
+        {
+          label: "FC média",
+          data: medias,
+          borderColor: cor("--zona-5"),
+          backgroundColor: cor("--zona-5"),
+          borderWidth: 2.5,
+          pointRadius: 5,
+          pointHoverRadius: 8,
+          pointBorderColor: cor("--superficie"),
+          pointBorderWidth: 2,
+          spanGaps: true,
+          tension: 0,
+        },
+        {
+          label: "FC máxima",
+          data: maximas,
+          borderColor: cor("--tinta-2"),
+          backgroundColor: cor("--tinta-2"),
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBorderColor: cor("--superficie"),
+          pointBorderWidth: 2,
+          spanGaps: true,
+          tension: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      rotulosPontosCiclo: {
+        conjuntos: [
+          { indice: 1, textos: maximas.map(textoBpm), posicao: "acima", cor: cor("--tinta-2") },
+          { indice: 0, textos: medias.map(textoBpm), posicao: "abaixo" },
+        ],
+      },
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        x: {
+          offset: true,
+          ticks: { color: cor("--tinta"), font: { weight: "600" } },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+        y: escalaY("bpm", {
+          min: limites.min,
+          max: limites.max,
+          ticks: { color: cor("--tinta-muda"), stepSize: 10 },
+        }),
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: (itens) => formatarDataIso(corridasCiclo[itens[0].dataIndex].data_local),
+            label: (item) => item.dataset.label + " " + NUMERO_0.format(item.parsed.y) + " bpm",
           },
         }),
       },
