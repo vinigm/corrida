@@ -892,6 +892,11 @@ const plugueRotulosBarrasCiclo = {
   },
 };
 
+// Fontes dos rótulos à direita das barras de zona ("40%" em cima, "35m52s" embaixo);
+// também usadas para medir a margem reservada a eles.
+const FONTE_ROTULO_ZONAS = "600 12px system-ui, -apple-system, sans-serif";
+const FONTE_ROTULO_ZONAS_SECUNDARIA = "500 11px system-ui, -apple-system, sans-serif";
+
 const plugueRotulosZonasHorizontal = {
   id: "rotulosZonasHorizontal",
   afterDatasetsDraw(grafico) {
@@ -899,15 +904,21 @@ const plugueRotulosZonasHorizontal = {
     if (!opcoes || !opcoes.rotulos) return;
     const contexto = grafico.ctx;
     const meta = grafico.getDatasetMeta(0);
-    opcoes.rotulos.forEach((texto, i) => {
+    opcoes.rotulos.forEach((rotulo, i) => {
       const barra = meta.data[i];
       if (!barra) return;
+      const [principal, secundario] = Array.isArray(rotulo) ? rotulo : [rotulo, null];
       contexto.save();
-      contexto.font = "600 12px system-ui, -apple-system, sans-serif";
-      contexto.fillStyle = cor("--tinta");
       contexto.textBaseline = "middle";
       contexto.textAlign = "left";
-      contexto.fillText(texto, barra.x + 8, barra.y);
+      contexto.font = FONTE_ROTULO_ZONAS;
+      contexto.fillStyle = cor("--tinta");
+      contexto.fillText(principal, barra.x + 8, secundario ? barra.y - 7 : barra.y);
+      if (secundario) {
+        contexto.font = FONTE_ROTULO_ZONAS_SECUNDARIA;
+        contexto.fillStyle = cor("--tinta-2");
+        contexto.fillText(secundario, barra.x + 8, barra.y + 8);
+      }
       contexto.restore();
     });
   },
@@ -1655,12 +1666,31 @@ function desenharGraficosZonasCiclo(corridasCiclo) {
     NUMERO_0.format(percentuaisResumo[idx]) + "% (" + formatarDuracaoSegundos(s) + ")",
   );
   const maiorPct = Math.max(...percentuaisResumo, 20);
-  const tetoXResumo = Math.min(115, Math.ceil((maiorPct + 25) / 10) * 10);
+  const tetoXResumo = Math.min(100, Math.ceil((maiorPct + 5) / 10) * 10);
+
+  // No celular o canvas é estreito e os rótulos cortavam dos dois lados. Por isso:
+  // - à direita, "% / tempo" em 2 linhas, com margem do tamanho do maior texto;
+  // - à esquerda, o eixo recebe a largura real do maior rótulo (o Chart.js limita a
+  //   metade do espaço livre e, sem isso, "Z1 · Aquecimento" saía cortado em 320 px).
+  const rotulosBarras = totaisSeg.map((s, idx) => [
+    NUMERO_0.format(percentuaisResumo[idx]) + "%",
+    formatarDuracaoSegundos(s),
+  ]);
+  const medidorTexto = document.createElement("canvas").getContext("2d");
+  const larguraRotuloDireita = Math.max(...rotulosBarras.map(([principal, secundario]) => {
+    medidorTexto.font = FONTE_ROTULO_ZONAS;
+    const larguraPrincipal = medidorTexto.measureText(principal).width;
+    medidorTexto.font = FONTE_ROTULO_ZONAS_SECUNDARIA;
+    return Math.max(larguraPrincipal, medidorTexto.measureText(secundario).width);
+  }));
+  medidorTexto.font = "600 11.5px " + Chart.defaults.font.family;
+  const larguraEixoZonas = Math.max(...ordemResumo.flatMap((z) => [z.curto, z.faixa]).map((texto) => medidorTexto.measureText(texto).width));
 
   const graficoResumo = new Chart(document.getElementById("grafico-zonas-resumo"), {
     type: "bar",
     data: {
-      labels: ordemResumo.map((z) => z.curto + " (" + z.faixa + ")"),
+      // Nome e faixa em 2 linhas: numa linha só o rótulo passava da largura do eixo e cortava à esquerda.
+      labels: ordemResumo.map((z) => [z.curto, z.faixa]),
       datasets: [{
         label: "% do tempo no ciclo",
         data: percentuaisResumo,
@@ -1674,7 +1704,8 @@ function desenharGraficosZonasCiclo(corridasCiclo) {
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
-      rotulosZonasHorizontal: { rotulos: rotulosDireita },
+      rotulosZonasHorizontal: { rotulos: rotulosBarras },
+      layout: { padding: { right: Math.ceil(larguraRotuloDireita) + 12 } },
       scales: {
         x: {
           beginAtZero: true,
@@ -1690,6 +1721,7 @@ function desenharGraficosZonasCiclo(corridasCiclo) {
           ticks: { color: cor("--tinta"), font: { weight: "600", size: 11.5 } },
           grid: { display: false },
           border: { color: cor("--eixo") },
+          afterFit: (escala) => { escala.width = Math.max(escala.width, Math.ceil(larguraEixoZonas) + 12); },
         },
       },
       plugins: {
