@@ -36,6 +36,16 @@ DIAS_JANELA_RECENTE = 30
 DIAS_JANELA_FORMA_ATUAL = 90
 DATA_INICIO_CICLO_ATUAL = "2026-11-21"
 
+# Status do treino (card abaixo dos Big Numbers), pela regra 80/20 pedida pelo
+# Vinicius em 26/11/2026: até ~20% do tempo da semana em Z4/Z5. Os limites por
+# corrida (40% e 20%) são proposta do Claude, ajustáveis.
+LIMITE_ZONAS_ALTAS_TREINO_PESADO = 0.40
+LIMITE_ZONAS_ALTAS_ATENCAO = 0.20
+META_ZONAS_ALTAS_SEMANA = 0.20
+DIAS_JANELA_STATUS_SEMANA = 7
+# Teto da Z3 no perfil Garmin do Vinicius (mesmas faixas usadas no template).
+FC_TETO_ZONA_3_BPM = 152
+
 SEGUNDOS_POR_MINUTO = 60.0
 METROS_POR_KM = 1000.0
 

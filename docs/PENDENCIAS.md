@@ -14,6 +14,8 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
 
 - ✅ **Versionar com git + GitHub Pages** (`https://github.com/vinigm/corrida` e `https://vinigm.github.io/corrida/`). `data/` fica fora do repositório (tem GPS). `index.html` gerado junto com `dashboard.html`.
 
+- ⏳ **Confirmar os limites do status do treino:** 40% e 20% de Z4/Z5 por corrida são proposta do Claude; o 80/20 semanal veio do Vinicius. Conferir também a FC máxima do perfil Garmin, que define as zonas.
+
 ## Claude (agente)
 
 - ⏳ **Testes** de `parse_fit`, ingestão e HTML. Sobrevivem mutantes como trocar `startTimeLocal` por GMT e tirar o filtro de corrida.
@@ -41,6 +43,7 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
   - ✅ Gráfico de linha do pace médio por corrida na aba Início. Conferido em 375 px.
   - ✅ Gráfico "Zonas de FC — Resumo" sem rótulos cortados no celular. Conferido em 320 px, 375 px e desktop.
   - ✅ Gráfico de linha de FC média e máxima por corrida na aba Início. Conferido em 320 px, desktop e modo escuro.
+  - ✅ Card "Status do treino" (regra 80/20 por zonas) abaixo dos Big Numbers. 50 testes; certificação independente APROVADA.
 - **25/11/2026**
   - ✅ Personal API conectada; token e chave fora do Drive.
   - ✅ Pipeline com ingestão incremental, CSVs e `dashboard.html`. 30 testes.

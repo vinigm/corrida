@@ -25,6 +25,7 @@ Atualizado em 25/11/2026 · Fila viva: [`PENDENCIAS.md`](PENDENCIAS.md) · Índi
 - **Painel** `dashboard.html` (e `index.html` para o GitHub Pages em `https://vinigm.github.io/corrida/`):
   - **Aba 1 — Início (Ciclo Atual, desde 21/11/2026):**
     - Painel de 3 Big Numbers no estilo card destacado (`KM Total`, `KM Médio por Semana`, `KM Médio por Mês` considerando semanas/meses ativos com corrida no ciclo);
+    - Card **Status do treino** logo abaixo dos Big Numbers (regra em `metricas.avaliar_status_treino`, texto em `gerar_html.py`): pela última corrida, % do tempo em Z4/Z5 ≥ 40% = pesado, ≥ 20% = atenção; semana de 7 dias até a última corrida acima de 20% em Z4/Z5 (80/20) = atenção; folga no dia seguinte após treino pesado ou 2 dias seguidos com ≥ 20%. Certificado por reimplementação independente em 26/11/2026 (APROVADO);
     - Gráfico de barras diário (dias de corrida do ciclo) empilhando km correndo + caminhando, com rótulo no topo de cada barra mostrando o total em km, a variação percentual em relação à corrida anterior e a variação acumulada desde a 1ª corrida do ciclo (`+18,0% vs ant. · +32,8% acum.`);
     - Gráfico de linha **Pace médio por corrida no ciclo** (`pace_correndo_min_km`, o mesmo da tabela), eixo invertido (mais rápido no alto) e valor escrito em cada ponto;
     - Gráfico de linha **Frequência cardíaca por corrida no ciclo**: FC média (vermelha) e FC máxima (cinza tracejada), de `fc_media_bpm` e `fc_max_bpm`, com o valor em cada ponto;
@@ -66,7 +67,8 @@ Atualizado em 25/11/2026 · Fila viva: [`PENDENCIAS.md`](PENDENCIAS.md) · Índi
 
 - O painel carrega **Chart.js 4.4.1 do jsDelivr**: precisa de internet para abrir. No navegador do app do Claude, o arquivo aberto direto vira URL `data:` e o CDN é bloqueado; para conferir lá, servir com `.claude/launch.json` (porta 8765).
 - "Dias sem correr" e as janelas de 30/90 dias ficam **congelados na hora da geração** (HTML estático). Para atualizar, rodar `./atualizar.sh`.
-- **Testes** (30, pytest) cobrem só as métricas puras. `parse_fit`, ingestão e HTML não têm teste.
+- **Testes** (50, pytest) cobrem as métricas puras e o status do treino. `parse_fit`, ingestão e o HTML desenhado não têm teste.
+- O **status do treino** fica congelado na geração e não olha a data de hoje: sem correr por dias, o card continua mostrando a última avaliação (e a folga pode ficar no passado).
 - Corrida com segmentos rwd mas **nenhum `rwd_run`** → maior trecho = **0** (não nulo). Não ocorre nos dados atuais.
 
 ## Maquiagem de visualização

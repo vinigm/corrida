@@ -25,6 +25,8 @@
     --pilula-negativa-tinta: #9c2b1b;
     --pilula-neutra-fundo: #efefeb;
     --pilula-neutra-tinta: #52514e;
+    --pilula-alerta-fundo: #fdf1e2;
+    --pilula-alerta-tinta: #8a4b0c;
     --zona-1: #9499a1;
     --zona-2: #2a78d6;
     --zona-3: #1baf7a;
@@ -51,6 +53,8 @@
       --pilula-negativa-tinta: #f5936c;
       --pilula-neutra-fundo: #2c2c2a;
       --pilula-neutra-tinta: #c3c2b7;
+      --pilula-alerta-fundo: rgba(235, 160, 52, 0.18);
+      --pilula-alerta-tinta: #f2b766;
       --zona-1: #7e848d;
       --zona-2: #3987e5;
       --zona-3: #199e70;
@@ -77,6 +81,8 @@
     --pilula-negativa-tinta: #f5936c;
     --pilula-neutra-fundo: #2c2c2a;
     --pilula-neutra-tinta: #c3c2b7;
+    --pilula-alerta-fundo: rgba(235, 160, 52, 0.18);
+    --pilula-alerta-tinta: #f2b766;
     --zona-1: #7e848d;
     --zona-2: #3987e5;
     --zona-3: #199e70;
@@ -251,6 +257,52 @@
     color: var(--tinta-2);
     margin: 0;
   }
+  /* Status do treino: card abaixo dos Big Numbers, cor pela intensidade */
+  .status-treino {
+    margin-top: 16px;
+    border: 1px solid var(--borda);
+    border-left: 4px solid var(--tinta-muda);
+    border-radius: 12px;
+    padding: 14px 18px;
+  }
+  .status-treino.pesado { border-left-color: var(--zona-5); }
+  .status-treino.atencao { border-left-color: var(--zona-4); }
+  .status-treino.leve { border-left-color: var(--zona-3); }
+  .status-treino-topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-bottom: 8px;
+  }
+  .status-treino-selo {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--pilula-neutra-fundo);
+    color: var(--pilula-neutra-tinta);
+  }
+  .status-treino.pesado .status-treino-selo { background: var(--pilula-negativa-fundo); color: var(--pilula-negativa-tinta); }
+  .status-treino.atencao .status-treino-selo { background: var(--pilula-alerta-fundo); color: var(--pilula-alerta-tinta); }
+  .status-treino.leve .status-treino-selo { background: var(--pilula-positiva-fundo); color: var(--pilula-positiva-tinta); }
+  .status-treino-titulo { font-size: 1rem; color: var(--tinta); }
+  .status-treino-itens {
+    margin: 0 0 8px;
+    padding-left: 18px;
+    color: var(--tinta-2);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .status-treino-recomendacao {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--tinta);
+  }
+
   .grade-big-numbers {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -419,6 +471,7 @@
         <p class="painel-ciclo-sub" id="subtitulo-ciclo"></p>
       </div>
       <div class="grade-big-numbers" id="big-numbers-ciclo"></div>
+      <div class="status-treino" id="status-treino" role="status" aria-label="Status do treino atual" hidden></div>
     </section>
 
     <section class="grade-graficos">
@@ -2167,10 +2220,43 @@ document.getElementById("tab-inicio").addEventListener("click", () => alternarAb
 document.getElementById("tab-historico").addEventListener("click", () => alternarAba("historico"));
 
 /* ---------- ciclo de desenho (refaz ao trocar claro/escuro) ---------- */
+// Selo do card de status, pelo nível calculado no Python (corrida/metricas.py).
+const SELOS_STATUS_TREINO = {
+  pesado: "Status · pesado",
+  atencao: "Status · atenção",
+  leve: "Status · ok",
+  sem_dados: "Status",
+};
+
+function desenharStatusTreino() {
+  const container = document.getElementById("status-treino");
+  const status = DADOS.status_treino;
+  container.textContent = "";
+  if (!status) {
+    container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+  container.className = "status-treino " + status.nivel;
+
+  const topo = criarElemento("div", "status-treino-topo");
+  topo.appendChild(criarElemento("span", "status-treino-selo", SELOS_STATUS_TREINO[status.nivel] || "Status"));
+  topo.appendChild(criarElemento("strong", "status-treino-titulo", status.titulo));
+  container.appendChild(topo);
+
+  const lista = criarElemento("ul", "status-treino-itens");
+  for (const item of status.itens) {
+    lista.appendChild(criarElemento("li", null, item));
+  }
+  container.appendChild(lista);
+  container.appendChild(criarElemento("p", "status-treino-recomendacao", status.recomendacao));
+}
+
 function desenharTudo() {
   graficos.forEach((grafico) => grafico.destroy());
   graficos.length = 0;
   desenharCicloAtual();
+  desenharStatusTreino();
   desenharControleAno();
   desenharResumoRecorte();
   desenharKpis();

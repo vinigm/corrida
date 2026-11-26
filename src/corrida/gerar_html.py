@@ -2,7 +2,7 @@
 
 import json
 import math
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -10,13 +10,30 @@ import pandas as pd
 from corrida.configuracao import (
     DATA_INICIO_CICLO_ATUAL,
     DIAS_JANELA_FORMA_ATUAL,
+    DIAS_JANELA_STATUS_SEMANA,
+    FC_TETO_ZONA_3_BPM,
     META_5_KM_M,
     META_10_KM_M,
+    META_ZONAS_ALTAS_SEMANA,
     URL_CHART_JS,
 )
-from corrida.metricas import IndicadoresResumo
+from corrida.metricas import (
+    NIVEL_TREINO_ATENCAO,
+    NIVEL_TREINO_LEVE,
+    NIVEL_TREINO_PESADO,
+    NIVEL_TREINO_SEM_DADOS,
+    IndicadoresResumo,
+    StatusTreino,
+)
 
 ARQUIVO_TEMPLATE = Path(__file__).parent / "template_dashboard.html"
+
+TITULOS_STATUS_TREINO = {
+    NIVEL_TREINO_PESADO: "Treino pesado: Z4/Z5 em excesso",
+    NIVEL_TREINO_ATENCAO: "Atenção à intensidade",
+    NIVEL_TREINO_LEVE: "Na base: Z2/Z3 em dia",
+    NIVEL_TREINO_SEM_DADOS: "Sem dados de zona na última corrida",
+}
 MARCADOR_DADOS = "/*__DADOS_JSON__*/null"
 MARCADOR_CHART_JS = "__URL_CHART_JS__"
 
@@ -109,6 +126,7 @@ def montar_dados_dashboard(
     gerado_em: datetime,
     dados_atualizados_em: datetime | None,
     segmentos: pd.DataFrame | None = None,
+    status_treino: StatusTreino | None = None,
 ) -> dict:
     """Reúne tudo que o HTML precisa em um único dicionário JSON-serializável."""
     if dados_atualizados_em is None:
@@ -123,6 +141,7 @@ def montar_dados_dashboard(
         "indicadores": indicadores_para_dicionario(indicadores),
         "metas_m": {"meta_5_km": META_5_KM_M, "meta_10_km": META_10_KM_M},
         "data_inicio_ciclo_atual": DATA_INICIO_CICLO_ATUAL,
+        "status_treino": status_treino_para_dicionario(status_treino),
         "gerado_em": gerado_em.isoformat(timespec="seconds"),
         "dados_atualizados_em": texto_atualizacao,
     }
@@ -148,3 +167,86 @@ def gravar_dashboard(html: str, arquivo: Path) -> None:
     arquivo_temporario.write_text(html, encoding="utf-8")
     arquivo_temporario.replace(arquivo)
 
+
+# ---------------------------------------------------------------------------
+# Status do treino: texto do card abaixo dos Big Numbers
+# ---------------------------------------------------------------------------
+
+
+def formatar_percentual(fracao: float) -> str:
+    """Fração em percentual inteiro: 0.6129 -> "61%"."""
+    percentual = fracao * 100
+    return f"{percentual:.0f}%"
+
+
+def formatar_dia_mes(dia: date) -> str:
+    """Data curta no formato brasileiro: 26/11."""
+    return dia.strftime("%d/%m")
+
+
+def redigir_itens_status(status: StatusTreino) -> list[str]:
+    """Fatos do treino atual, um por linha: última corrida, semana e dias seguidos."""
+    itens: list[str] = []
+    dia_ultima = formatar_dia_mes(status.data_ultima_corrida)
+
+    if status.fracao_zonas_altas_ultima is not None:
+        percentual_ultima = formatar_percentual(status.fracao_zonas_altas_ultima)
+        itens.append(f"Última corrida ({dia_ultima}): {percentual_ultima} do tempo em Z4/Z5.")
+
+    if status.fracao_zonas_altas_semana is not None:
+        percentual_semana = formatar_percentual(status.fracao_zonas_altas_semana)
+        percentual_meta = formatar_percentual(META_ZONAS_ALTAS_SEMANA)
+        if status.corridas_na_semana == 1:
+            texto_corridas = "1 corrida"
+        else:
+            texto_corridas = f"{status.corridas_na_semana} corridas"
+        itens.append(
+            f"{DIAS_JANELA_STATUS_SEMANA} dias até {dia_ultima} ({texto_corridas}): "
+            f"{percentual_semana} em Z4/Z5. Alvo do 80/20: até {percentual_meta}."
+        )
+
+    if status.correu_dia_anterior:
+        dia_anterior = formatar_dia_mes(status.data_ultima_corrida - timedelta(days=1))
+        itens.append(f"Correu 2 dias seguidos ({dia_anterior} e {dia_ultima}).")
+
+    return itens
+
+
+def redigir_recomendacao_status(status: StatusTreino) -> str:
+    """Orientação para o próximo treino, conforme folga e nível."""
+    orientacao_leve = (
+        f"em Z2/Z3 (até {FC_TETO_ZONA_3_BPM} bpm), num ritmo em que dê para conversar"
+    )
+
+    if status.data_folga_recomendada is not None:
+        dia_folga = formatar_dia_mes(status.data_folga_recomendada)
+        return f"Folga em {dia_folga}. Próximo treino leve, {orientacao_leve}."
+    if status.nivel == NIVEL_TREINO_ATENCAO:
+        return f"Próximo treino leve, {orientacao_leve}, para equilibrar a semana."
+    if status.nivel == NIVEL_TREINO_LEVE:
+        return "Pode manter: base em Z2/Z3 e no máximo 1 treino forte (Z4/Z5) por semana."
+    return "Sem as zonas de FC da Garmin, não dá para avaliar a intensidade."
+
+
+def status_treino_para_dicionario(status: StatusTreino | None) -> dict | None:
+    """Converte o status em dicionário serializável, já com o texto do card."""
+    if status is None:
+        return None
+
+    if status.data_folga_recomendada is None:
+        data_folga = None
+    else:
+        data_folga = status.data_folga_recomendada.isoformat()
+
+    return {
+        "nivel": status.nivel,
+        "titulo": TITULOS_STATUS_TREINO[status.nivel],
+        "itens": redigir_itens_status(status),
+        "recomendacao": redigir_recomendacao_status(status),
+        "data_ultima_corrida": status.data_ultima_corrida.isoformat(),
+        "fracao_zonas_altas_ultima": status.fracao_zonas_altas_ultima,
+        "fracao_zonas_altas_semana": status.fracao_zonas_altas_semana,
+        "corridas_na_semana": status.corridas_na_semana,
+        "correu_dia_anterior": status.correu_dia_anterior,
+        "data_folga_recomendada": data_folga,
+    }

@@ -13,7 +13,12 @@ from corrida.gerar_html import (
     renderizar_html,
 )
 from corrida.ingestao import ingerir
-from corrida.metricas import calcular_indicadores, calcular_volume_semanal
+from corrida.metricas import (
+    TempoEmZonasCorrida,
+    avaliar_status_treino,
+    calcular_indicadores,
+    calcular_volume_semanal,
+)
 from corrida.parse_fit import ler_fit
 from corrida.processamento import (
     construir_tabelas,
@@ -71,6 +76,30 @@ def gravar_csvs(
     )
 
 
+def segundos_zona_ou_nulo(valor: object) -> float | None:
+    """Tempo em zona do CSV: NaN (Garmin não informou) vira None."""
+    if pd.isna(valor):
+        return None
+    return float(valor)
+
+
+def extrair_tempos_em_zonas(corridas: pd.DataFrame) -> list[TempoEmZonasCorrida]:
+    """Monta o tempo em zonas de FC de cada corrida (colunas `fc_zona_N_s`)."""
+    tempos: list[TempoEmZonasCorrida] = []
+    for _, corrida in corridas.iterrows():
+        inicio_local = datetime.fromisoformat(str(corrida["data_hora_local"]))
+        tempo = TempoEmZonasCorrida(
+            inicio_local=inicio_local,
+            segundos_zona_1=segundos_zona_ou_nulo(corrida["fc_zona_1_s"]),
+            segundos_zona_2=segundos_zona_ou_nulo(corrida["fc_zona_2_s"]),
+            segundos_zona_3=segundos_zona_ou_nulo(corrida["fc_zona_3_s"]),
+            segundos_zona_4=segundos_zona_ou_nulo(corrida["fc_zona_4_s"]),
+            segundos_zona_5=segundos_zona_ou_nulo(corrida["fc_zona_5_s"]),
+        )
+        tempos.append(tempo)
+    return tempos
+
+
 def gerar_dashboard(
     corridas: pd.DataFrame,
     caminhos: CaminhosProjeto,
@@ -96,6 +125,8 @@ def gerar_dashboard(
     indicadores = calcular_indicadores(
         datas_corridas, distancias_totais_m, maiores_trechos_m, hoje
     )
+    tempos_em_zonas = extrair_tempos_em_zonas(corridas)
+    status_treino = avaliar_status_treino(tempos_em_zonas)
 
     if caminhos.arquivo_atividades.exists():
         instante_arquivo = caminhos.arquivo_atividades.stat().st_mtime
@@ -107,7 +138,13 @@ def gerar_dashboard(
         segmentos = pd.read_csv(caminhos.arquivo_segmentos)
 
     dados = montar_dados_dashboard(
-        corridas, volume_semanal, indicadores, agora, dados_atualizados_em, segmentos
+        corridas,
+        volume_semanal,
+        indicadores,
+        agora,
+        dados_atualizados_em,
+        segmentos,
+        status_treino,
     )
     html = renderizar_html(dados)
     gravar_dashboard(html, caminhos.arquivo_dashboard)

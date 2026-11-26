@@ -1,7 +1,8 @@
 """Métricas de corrida: funções puras, sem I/O."""
 
 import dataclasses
-from datetime import date, timedelta
+import math
+from datetime import date, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -9,6 +10,10 @@ import pandas as pd
 from corrida.configuracao import (
     DIAS_JANELA_FORMA_ATUAL,
     DIAS_JANELA_RECENTE,
+    DIAS_JANELA_STATUS_SEMANA,
+    LIMITE_ZONAS_ALTAS_ATENCAO,
+    LIMITE_ZONAS_ALTAS_TREINO_PESADO,
+    META_ZONAS_ALTAS_SEMANA,
     METROS_POR_KM,
     META_5_KM_M,
     META_10_KM_M,
@@ -346,4 +351,203 @@ def calcular_indicadores(
         data_ultima_corrida=ultima_corrida,
         dias_desde_ultima_corrida=dias_desde_ultima,
         corridas_ultimos_30_dias=corridas_recentes,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Status do treino (regra 80/20 por zonas de FC)
+# ---------------------------------------------------------------------------
+
+NIVEL_TREINO_PESADO = "pesado"
+NIVEL_TREINO_ATENCAO = "atencao"
+NIVEL_TREINO_LEVE = "leve"
+NIVEL_TREINO_SEM_DADOS = "sem_dados"
+
+
+def segundos_ou_zero(segundos: float | None) -> float:
+    """Tempo em zona informado pela Garmin; ausente (None ou NaN) conta como 0."""
+    if segundos is None:
+        return 0.0
+    if math.isnan(segundos):
+        return 0.0
+    return float(segundos)
+
+
+@dataclasses.dataclass(frozen=True)
+class TempoEmZonasCorrida:
+    """Tempo de uma corrida em cada zona de FC, como a Garmin reporta (`hrTimeInZone_N`).
+
+    Attributes:
+        inicio_local: Início da corrida no horário local; ordena corridas do mesmo dia.
+        segundos_zona_1: Segundos em Z1 (None/NaN = não informado).
+        segundos_zona_2: Segundos em Z2.
+        segundos_zona_3: Segundos em Z3.
+        segundos_zona_4: Segundos em Z4.
+        segundos_zona_5: Segundos em Z5.
+    """
+
+    inicio_local: datetime
+    segundos_zona_1: float | None
+    segundos_zona_2: float | None
+    segundos_zona_3: float | None
+    segundos_zona_4: float | None
+    segundos_zona_5: float | None
+
+    def segundos_zonas_altas(self) -> float:
+        """Segundos em Z4 + Z5 (intensidade alta na regra 80/20)."""
+        segundos_z4 = segundos_ou_zero(self.segundos_zona_4)
+        segundos_z5 = segundos_ou_zero(self.segundos_zona_5)
+        return segundos_z4 + segundos_z5
+
+    def segundos_com_zona(self) -> float:
+        """Soma do tempo nas 5 zonas; 0 quando a Garmin não informou nenhuma."""
+        total = 0.0
+        for segundos in (
+            self.segundos_zona_1,
+            self.segundos_zona_2,
+            self.segundos_zona_3,
+            self.segundos_zona_4,
+            self.segundos_zona_5,
+        ):
+            total += segundos_ou_zero(segundos)
+        return total
+
+
+@dataclasses.dataclass(frozen=True)
+class StatusTreino:
+    """Avaliação da intensidade do treino atual (card abaixo dos Big Numbers).
+
+    Attributes:
+        nivel: pesado, atencao, leve ou sem_dados.
+        data_ultima_corrida: Dia da corrida avaliada (a mais recente).
+        fracao_zonas_altas_ultima: Fração do tempo da última corrida em Z4/Z5
+            (None sem dados de zona).
+        fracao_zonas_altas_semana: Mesma fração somando as corridas com zona dos
+            7 dias corridos que terminam no dia da última corrida.
+        corridas_na_semana: Corridas com dados de zona nessa janela.
+        correu_dia_anterior: Houve corrida no dia anterior ao da última.
+        data_folga_recomendada: Dia seguinte à última corrida, quando a regra pede folga.
+    """
+
+    nivel: str
+    data_ultima_corrida: date
+    fracao_zonas_altas_ultima: float | None
+    fracao_zonas_altas_semana: float | None
+    corridas_na_semana: int
+    correu_dia_anterior: bool
+    data_folga_recomendada: date | None
+
+
+def obter_inicio_local(corrida: TempoEmZonasCorrida) -> datetime:
+    """Chave de ordenação das corridas."""
+    return corrida.inicio_local
+
+
+def calcular_fracao_zonas_altas(corridas: list[TempoEmZonasCorrida]) -> float | None:
+    """Fração do tempo em Z4/Z5 somando as corridas; None se nenhuma tem tempo em zona."""
+    segundos_altos = 0.0
+    segundos_totais = 0.0
+    for corrida in corridas:
+        segundos_altos += corrida.segundos_zonas_altas()
+        segundos_totais += corrida.segundos_com_zona()
+
+    if segundos_totais <= 0:
+        return None
+    return segundos_altos / segundos_totais
+
+
+def classificar_nivel_treino(
+    fracao_ultima: float,
+    fracao_semana: float | None,
+) -> str:
+    """Classifica a intensidade pela regra 80/20.
+
+    Precedência: pesado (última >= 40% em Z4/Z5) > atenção (última >= 20% ou
+    semana > 20%) > leve. A semana exatamente em 20% ainda cumpre o 80/20.
+    """
+    treino_pesado = fracao_ultima >= LIMITE_ZONAS_ALTAS_TREINO_PESADO
+    ultima_acima_da_base = fracao_ultima >= LIMITE_ZONAS_ALTAS_ATENCAO
+    semana_fora_do_80_20 = (
+        fracao_semana is not None and fracao_semana > META_ZONAS_ALTAS_SEMANA
+    )
+
+    if treino_pesado:
+        return NIVEL_TREINO_PESADO
+    if ultima_acima_da_base or semana_fora_do_80_20:
+        return NIVEL_TREINO_ATENCAO
+    return NIVEL_TREINO_LEVE
+
+
+def decidir_data_folga(
+    nivel: str,
+    fracao_ultima: float,
+    correu_dia_anterior: bool,
+    data_ultima: date,
+) -> date | None:
+    """Folga no dia seguinte após treino pesado, ou após 2 dias seguidos com a
+    última corrida em >= 20% de Z4/Z5. Caso contrário, None."""
+    ultima_puxada = fracao_ultima >= LIMITE_ZONAS_ALTAS_ATENCAO
+    precisa_folga = nivel == NIVEL_TREINO_PESADO or (correu_dia_anterior and ultima_puxada)
+
+    if precisa_folga:
+        return data_ultima + timedelta(days=1)
+    return None
+
+
+def avaliar_status_treino(
+    corridas: list[TempoEmZonasCorrida],
+) -> StatusTreino | None:
+    """Avalia a intensidade do treino atual (a corrida mais recente).
+
+    Janela da semana = 7 dias corridos terminando no dia da última corrida
+    (inclusive), só com corridas que têm tempo em zona. "Dia anterior" = uma
+    corrida no dia imediatamente anterior ao da última; duas corridas no mesmo
+    dia não contam como dias seguidos.
+
+    Args:
+        corridas: Tempo em zonas de cada corrida, em qualquer ordem.
+
+    Returns:
+        StatusTreino; None se a lista estiver vazia. Se a última corrida não tem
+        tempo em zona, o nível é sem_dados e não há folga.
+    """
+    if not corridas:
+        return None
+
+    ultima = max(corridas, key=obter_inicio_local)
+    data_ultima = ultima.inicio_local.date()
+    inicio_janela = data_ultima - timedelta(days=DIAS_JANELA_STATUS_SEMANA - 1)
+    dia_anterior = data_ultima - timedelta(days=1)
+
+    corridas_semana: list[TempoEmZonasCorrida] = []
+    correu_dia_anterior = False
+
+    for corrida in corridas:
+        data_corrida = corrida.inicio_local.date()
+        dentro_da_janela = inicio_janela <= data_corrida <= data_ultima
+        tem_zona = corrida.segundos_com_zona() > 0
+        if dentro_da_janela and tem_zona:
+            corridas_semana.append(corrida)
+
+        if data_corrida == dia_anterior:
+            correu_dia_anterior = True
+
+    fracao_ultima = calcular_fracao_zonas_altas([ultima])
+    fracao_semana = calcular_fracao_zonas_altas(corridas_semana)
+
+    if fracao_ultima is None:
+        nivel = NIVEL_TREINO_SEM_DADOS
+        data_folga = None
+    else:
+        nivel = classificar_nivel_treino(fracao_ultima, fracao_semana)
+        data_folga = decidir_data_folga(nivel, fracao_ultima, correu_dia_anterior, data_ultima)
+
+    return StatusTreino(
+        nivel=nivel,
+        data_ultima_corrida=data_ultima,
+        fracao_zonas_altas_ultima=fracao_ultima,
+        fracao_zonas_altas_semana=fracao_semana,
+        corridas_na_semana=len(corridas_semana),
+        correu_dia_anterior=correu_dia_anterior,
+        data_folga_recomendada=data_folga,
     )
