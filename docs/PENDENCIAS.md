@@ -38,6 +38,7 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
   - ✅ Corrida de 26/11/2026 ingerida: 4,02 km, trecho contínuo 2,02 km. Total: 27 corridas, 84,59 km.
   - ✅ Zonas de FC (`fc_zona_*_s`) conferidas contra a API: 0 divergências em 135 valores.
   - ✅ Renovação de token vencido exercitada contra a API real.
+  - ✅ Gráfico de linha do pace médio por corrida na aba Início. Conferido em 375 px.
 - **25/11/2026**
   - ✅ Personal API conectada; token e chave fora do Drive.
   - ✅ Pipeline com ingestão incremental, CSVs e `dashboard.html`. 30 testes.

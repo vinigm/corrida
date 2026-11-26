@@ -429,6 +429,11 @@
       </article>
 
       <article class="cartao cartao-grafico">
+        <h2>Pace médio por corrida no ciclo</h2>
+        <div class="area-grafico"><canvas id="grafico-ciclo-pace" role="img" aria-label="Pace médio correndo por corrida do ciclo atual, em minutos por km. Dados na tabela do ciclo."></canvas></div>
+      </article>
+
+      <article class="cartao cartao-grafico">
         <h2>Raio-X ao longo dos km: onde corri e onde caminhei</h2>
         <div class="legenda" id="legenda-raiox-km"></div>
         <div class="area-grafico" id="container-raiox-km"><canvas id="grafico-raiox-km" role="img" aria-label="Mapa ao longo dos quilômetros mostrando trechos correndo e caminhando em cada corrida do ciclo atual."></canvas></div>
@@ -953,6 +958,28 @@ const plugueRotulosRaioXKm = {
   },
 };
 
+// Escreve o valor (ex.: "6:22") acima de cada ponto do gráfico de pace do ciclo.
+const plugueRotulosPontosCiclo = {
+  id: "rotulosPontosCiclo",
+  afterDatasetsDraw(grafico) {
+    const opcoes = grafico.options.rotulosPontosCiclo;
+    if (!opcoes || !opcoes.textos) return;
+    const contexto = grafico.ctx;
+    const meta = grafico.getDatasetMeta(0);
+    contexto.save();
+    contexto.font = "700 12px system-ui, -apple-system, sans-serif";
+    contexto.fillStyle = cor("--tinta");
+    contexto.textAlign = "center";
+    contexto.textBaseline = "bottom";
+    opcoes.textos.forEach((texto, indice) => {
+      const ponto = meta.data[indice];
+      if (texto === null || !ponto) return;
+      contexto.fillText(texto, ponto.x, ponto.y - 10);
+    });
+    contexto.restore();
+  },
+};
+
 function limitesDoTempo() {
   const folga = 10 * 24 * 3600 * 1000;
   if (anoSelecionado !== null) {
@@ -1445,6 +1472,7 @@ function desenharCicloAtual() {
   }));
 
   desenharGraficoCicloBarras(corridasCiclo);
+  desenharGraficoCicloPace(corridasCiclo);
   desenharTabelaCiclo(corridasCiclo);
   desenharGraficosZonasCiclo(corridasCiclo);
   desenharGraficoRaioXKm(corridasCiclo);
@@ -1845,6 +1873,82 @@ function desenharGraficoCicloBarras(corridasCiclo) {
   graficos.push(grafico);
 }
 
+// Eixo do pace com pelo menos 1:00 min/km de amplitude, em degraus de 15 s.
+// Sem isso o Chart.js aperta a escala e 10–15 s de diferença parecem um despenhadeiro.
+function limitesEixoPace(paces) {
+  const validos = paces.filter((pace) => pace !== null);
+  if (validos.length === 0) return {};
+  const menor = Math.min(...validos);
+  const maior = Math.max(...validos);
+  const centro = (menor + maior) / 2;
+  const meiaAmplitude = Math.max(0.5, (maior - menor) / 2 + 0.15);
+  return {
+    min: Math.floor((centro - meiaAmplitude) * 4) / 4,
+    max: Math.ceil((centro + meiaAmplitude) * 4) / 4,
+  };
+}
+
+function desenharGraficoCicloPace(corridasCiclo) {
+  const rotulos = corridasCiclo.map((c) => formatarDataIso(c.data_local));
+  const paces = corridasCiclo.map((c) => (c.pace_correndo_min_km === null || c.pace_correndo_min_km === undefined) ? null : c.pace_correndo_min_km);
+  const limites = limitesEixoPace(paces);
+
+  const grafico = new Chart(document.getElementById("grafico-ciclo-pace"), {
+    type: "line",
+    data: {
+      labels: rotulos,
+      datasets: [{
+        label: "Pace correndo",
+        data: paces,
+        borderColor: cor("--serie-1"),
+        backgroundColor: cor("--serie-1"),
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        pointBorderColor: cor("--superficie"),
+        pointBorderWidth: 2,
+        spanGaps: true,
+        tension: 0,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      rotulosPontosCiclo: { textos: paces.map((pace) => (pace === null ? null : formatarPace(pace))) },
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        x: {
+          offset: true,
+          ticks: { color: cor("--tinta"), font: { weight: "600" } },
+          grid: { display: false },
+          border: { color: cor("--eixo") },
+        },
+        y: escalaY("min/km (menor = mais rápido)", {
+          reverse: true,
+          min: limites.min,
+          max: limites.max,
+          ticks: { color: cor("--tinta-muda"), stepSize: 0.25, callback: (valor) => formatarPace(valor) },
+        }),
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(estiloTooltip(), {
+          callbacks: {
+            title: (itens) => formatarDataIso(corridasCiclo[itens[0].dataIndex].data_local),
+            label: (item) => {
+              const corrida = corridasCiclo[item.dataIndex];
+              const textoFc = corrida.fc_media_bpm ? " · FC média " + Math.round(corrida.fc_media_bpm) + " bpm" : "";
+              return "Pace correndo " + formatarPace(item.parsed.y) + " /km" + textoFc;
+            },
+          },
+        }),
+      },
+    },
+  });
+  graficos.push(grafico);
+}
+
 function desenharTabelaCiclo(corridasCiclo) {
   const corpo = document.querySelector("#tabela-ciclo tbody");
   corpo.textContent = "";
@@ -1941,7 +2045,7 @@ function desenharTudo() {
   desenharRodape();
 }
 
-Chart.register(plugueLinhaVertical, plugueRotulosMeta, plugueRotulosBarrasCiclo, plugueRotulosZonasHorizontal, plugueRotulosRaioXKm);
+Chart.register(plugueLinhaVertical, plugueRotulosMeta, plugueRotulosBarrasCiclo, plugueRotulosZonasHorizontal, plugueRotulosRaioXKm, plugueRotulosPontosCiclo);
 anoSelecionado = lerAnoDoHash();
 if (anoSelecionado !== null) {
   alternarAba("historico");
