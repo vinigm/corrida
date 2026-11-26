@@ -18,7 +18,7 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
 
 - ⏳ **Testes** de `parse_fit`, ingestão e HTML. Sobrevivem mutantes como trocar `startTimeLocal` por GMT e tirar o filtro de corrida.
 
-- ⏳ **Renovação de token vencido:** testar contra a API real.
+- ✅ **Renovação de token vencido:** exercitada contra a API real em 26/11/2026 (cache vencido → token novo).
 
 - ⏳ **Painel offline:** embutir o Chart.js no HTML, se o Vinicius quiser abrir sem internet.
 
@@ -34,6 +34,10 @@ Retrato do sistema: [`ESTADO.md`](ESTADO.md). Status: ✅ resolvido · ⏳ em ab
 
 ## Registro cronológico
 
+- **26/11/2026**
+  - ✅ Corrida de 26/11/2026 ingerida: 4,02 km, trecho contínuo 2,02 km. Total: 27 corridas, 84,59 km.
+  - ✅ Zonas de FC (`fc_zona_*_s`) conferidas contra a API: 0 divergências em 135 valores.
+  - ✅ Renovação de token vencido exercitada contra a API real.
 - **25/11/2026**
   - ✅ Personal API conectada; token e chave fora do Drive.
   - ✅ Pipeline com ingestão incremental, CSVs e `dashboard.html`. 30 testes.
